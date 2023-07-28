@@ -14,6 +14,7 @@
 
 ## 命令行
 * 入口文件：`command.py`
+
 ### 查询操作
 * 直接查询
     ```shell
@@ -35,15 +36,46 @@
 
 ### 关注操作
 ```shell
-# python command.py --command=<操作类型> -t <类型> [-c <代码>]
+python command.py --command=<操作类型> -t <类型> [-c <代码>]
 
-# 示例：
-# 查询关注的基金
+# 示例：查询关注的基金
 python command.py --command='get' -t 'fund'
 
-# 增加关注的基金：161725、003096
+# 示例：增加关注的基金：161725、003096
 python command.py --command='add' -t 'fund' -c '161725,003096'
 
-# 删除某个关注的基金：161725、003096
+# 示例：删除某个关注的基金：161725、003096
 python command.py --command='delete' -t 'fund' -c '161725,003096'
+```
+
+## http请求
+* 入口文件：`app.py`
+
+### 启动
+* 直接启动：`python app.py`
+* 基于uvicorn：`uvicorn app:app`
+
+### 查询
+```text
+curl -X GET "http://127.0.0.1:8000/search/${type}" --data "codes=${codes}"
+
+# 示例：查询基金：161725、003096
+http://127.0.0.1:8000/search/fund?codes=161725,003096
+
+# 示例：查询所关注的基金
+http://127.0.0.1:8000/search/fund
+```
+
+### 关注
+```text
+curl -X GET "http://127.0.0.1:8000/watch/${command}" --data "type=${type}&codes=${codes}"
+
+# 示例：查询关注的基金
+http://127.0.0.1:8000/watch/get?type=fund
+
+# 示例：增加关注的基金：161725、003096
+http://127.0.0.1:8000/watch/add?type=fund&codes=161725,003096
+
+# 示例： 删除某个关注的基金：161725、003096
+http://127.0.0.1:8000/watch/delete?type=fund&codes=161725,003096
 ```
