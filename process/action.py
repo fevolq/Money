@@ -41,26 +41,29 @@ class Process:
         """
         self.api = eastmoney.EastMoney(money_type)
         self.money_type = money_type
-        self.codes = codes if isinstance(codes, list) else [str(code) for code in codes.split(',') if code]
+        self.codes = codes if isinstance(codes, (list, type(None))) else [str(code) for code in codes.split(',') if code]
         self.title = {
             'stock': '股票',
             'fund': '基金',
         }[self.money_type]
 
-    def get_codes(self):
+        self.data = self.get_data()
+        self.msg = self.gen_message()
+
+    def _get_codes(self):
         if not self.codes:
             data = watch.load_watch()
             if data.get(self.money_type):
                 self.codes = data[self.money_type]
-            else:
-                sys.exit('无关注项，请添加关注后再来。')
+
+            assert self.codes, '无关注项，请添加关注后再来。'
 
         return self.codes
 
     def get_data(self):
         result = []
 
-        codes = self.get_codes()
+        codes = self._get_codes()
         for code in codes:
             data, ok = self.api.fetch_current(code)
             if not ok or not data:
@@ -86,19 +89,14 @@ class Process:
 
         return result
 
-    def gen_message(self, data: list):
+    def gen_message(self):
         content = f'【{self.title}】{utils.asia_local_time()}\n\n'
         tmp = [f'{row["name"]} [{row["code"]}]\n'
                f'当日基准：{row["init_worth"]}\n'
                f'当前最新：{row["current_worth"]}\n'
                f'涨跌幅：{row["rate"]}\n'
                f'数据时间：{row["time"]}'
-               for row in data]
+               for row in self.data if self.data]
         content += '\n\n'.join(tmp)
 
         return content
-
-    def main(self):
-        data = self.get_data()
-        msg = self.gen_message(data)
-        print(msg)

@@ -15,7 +15,7 @@ def check_money_type(index=None):
     """
     def check(func):
         @wraps(func)
-        def decorated_func(*args, **kwargs):
+        def wrapper(*args, **kwargs):
             if index is None:
                 money_type = kwargs['money_type']
             else:
@@ -24,5 +24,18 @@ def check_money_type(index=None):
                 sys.exit('类型未匹配!')
 
             return func(*args, **kwargs)
-        return decorated_func
+        return wrapper
     return check
+
+
+def sys_exit(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            result = func(*args, **kwargs)
+        except Exception as e:
+            # raise e           # 本地测试时可打开
+            sys.exit(str(e))
+
+        return result
+    return wrapper

@@ -6,22 +6,26 @@
 import getopt
 import sys
 
-from process import action, watch
+from process import action, watch, bean
 
 
+@bean.sys_exit
 def command(cmd, *, money_type, codes: str = None):
     actions = {
         'add': watch.add,
         'get': watch.get,
         'delete': watch.delete,
     }
+    assert cmd.lower() in actions, 'command参数错误'
 
-    if cmd.lower() in actions:
-        actions[cmd.lower()](money_type, codes=[str(code) for code in codes.split(',')])
+    result, msg = actions[cmd.lower()](money_type, codes=[str(code) for code in codes.split(',')] if codes else [])
+    print(msg)
 
 
+@bean.sys_exit
 def main(money_type, *, codes: str = None):
-    action.Process(money_type, codes=codes).main()
+    process = action.Process(money_type, codes=codes)
+    print(process.msg)
 
 
 if __name__ == '__main__':

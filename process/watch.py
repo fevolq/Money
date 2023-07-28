@@ -27,6 +27,7 @@ def save_watch(data):
 
 @bean.check_money_type(0)
 def add(money_type, *, codes: [str]):
+    assert codes, '缺少有效代码'
     data = load_watch()
 
     record_codes = data.get(money_type, [])
@@ -35,7 +36,7 @@ def add(money_type, *, codes: [str]):
     data[money_type] = record_codes
 
     save_watch(data)
-    print(f'{",".join(sub)} 添加成功')
+    return True, f'{",".join(sub)}添加成功'
 
 
 @bean.check_money_type(0)
@@ -43,24 +44,28 @@ def get(money_type, **kwargs):
     data = load_watch()
 
     codes = data.get(money_type, [])
-    print(f'已关注: {",".join(codes)}') if codes else print('暂无关注')
 
-    return codes
+    msg = f'已关注: {",".join(codes)}' if codes else '暂无关注'
+
+    return codes, msg
 
 
 @bean.check_money_type(0)
 def delete(money_type, *, codes: [str]):
+    assert codes, '缺少有效代码'
     data = load_watch()
 
     record_codes = data.get(money_type, [])
 
+    hint_codes = []
     for code in codes:
         if str(code) in record_codes:
+            hint_codes.append(code)
             record_codes.remove(str(code))
     data[money_type] = record_codes
 
     save_watch(data)
-    print('删除成功')
+    return True, f'{",".join(hint_codes)}删除成功'
 
 
 if __name__ == '__main__':
