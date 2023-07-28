@@ -10,3 +10,4 @@ dist/
 local_config.py
 demo.py
 demo
+data/watch.json
