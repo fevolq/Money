@@ -1,0 +1,12 @@
+__pycache__/
+venv/
+.idea
+.git
+
+build/
+dist/
+
+*.log
+local_config.py
+demo.py
+demo
