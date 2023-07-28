@@ -2,9 +2,8 @@
 基于东方财富网API实现的的估值查询功能，可通过 `命令行` 、`网络请求` 等进行交互。
 
 # TODO
-1. api接口交互
-2. 信息通知
-3. 服务部署（定时查询关注）
+* 信息通知
+* 服务部署（定时查询关注）
 
 # 内部设计
 1. 通过指定类型 `(fund/stock)` 和指定代码，可直接查询估值等数据
@@ -54,28 +53,31 @@ python command.py --command='delete' -t 'fund' -c '161725,003096'
 ### 启动
 * 直接启动：`python app.py`
 * 基于uvicorn：`uvicorn app:app`
+* 容器化：
+  * 构建镜像：`docker build -t <image_name> .`
+  * 启动容器：`docker run -d --name=<container_name> -p 8888:8888 <image_id>`
 
 ### 查询
 ```text
-curl -X GET "http://127.0.0.1:8000/search/${type}" --data "codes=${codes}"
+curl -X GET "http://127.0.0.1:8888/search/${type}" --data "codes=${codes}"
 
 # 示例：查询基金：161725、003096
-http://127.0.0.1:8000/search/fund?codes=161725,003096
+http://127.0.0.1:8888/search/fund?codes=161725,003096
 
 # 示例：查询所关注的基金
-http://127.0.0.1:8000/search/fund
+http://127.0.0.1:8888/search/fund
 ```
 
 ### 关注
 ```text
-curl -X GET "http://127.0.0.1:8000/watch/${command}" --data "type=${type}&codes=${codes}"
+curl -X GET "http://127.0.0.1:8888/watch/${command}" --data "type=${type}&codes=${codes}"
 
 # 示例：查询关注的基金
-http://127.0.0.1:8000/watch/get?type=fund
+http://127.0.0.1:8888/watch/get?type=fund
 
 # 示例：增加关注的基金：161725、003096
-http://127.0.0.1:8000/watch/add?type=fund&codes=161725,003096
+http://127.0.0.1:8888/watch/add?type=fund&codes=161725,003096
 
 # 示例： 删除某个关注的基金：161725、003096
-http://127.0.0.1:8000/watch/delete?type=fund&codes=161725,003096
+http://127.0.0.1:8888/watch/delete?type=fund&codes=161725,003096
 ```
