@@ -3,7 +3,6 @@
 # CreateTime: 2023/7/27 17:47
 # FileName:
 
-import sys
 from typing import Union
 
 from api import eastmoney
@@ -12,7 +11,6 @@ from process import bean, watch
 
 
 class Process:
-
     relation_fields = {
         'stock': {
             'code': 'f57',
@@ -41,7 +39,8 @@ class Process:
         """
         self.api = eastmoney.EastMoney(money_type)
         self.money_type = money_type
-        self.codes = codes if isinstance(codes, (list, type(None))) else [str(code) for code in codes.split(',') if code]
+        self.codes = codes if isinstance(codes, (list, type(None))) else [str(code) for code in codes.split(',') if
+                                                                          code]
         self.title = {
             'stock': '股票',
             'fund': '基金',
