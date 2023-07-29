@@ -10,7 +10,7 @@ import uvicorn
 from fastapi import FastAPI, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
 
-from process import action, watch
+from module import process, watch
 
 app = FastAPI()
 
@@ -43,11 +43,11 @@ def search(
         money_type: MoneyType,
         codes: Union[str, None] = Query(default=None),
 ):
-    process = action.Process(money_type, codes=codes)
+    processor = process.Process(money_type, codes=codes)
     return {
         'code': 200,
-        'data': process.data,
-        'message': process.msg,
+        'data': processor.data,
+        'message': processor.msg,
     }
 
 

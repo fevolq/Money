@@ -6,7 +6,7 @@
 import json
 import os
 
-from process import bean
+from module import bean
 
 
 watch_path = os.path.join(os.path.abspath(__file__), '../../data/watch.json').replace('\\', '/')

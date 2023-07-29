@@ -7,7 +7,7 @@ from typing import Union
 
 from api import eastmoney
 from utils import utils
-from process import bean, watch
+from module import bean, watch
 
 
 class Process:

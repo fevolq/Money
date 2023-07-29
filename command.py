@@ -6,7 +6,7 @@
 import getopt
 import sys
 
-from process import action, watch, bean
+from module import process, watch, bean
 
 
 @bean.sys_exit
@@ -24,8 +24,8 @@ def command(cmd, *, money_type, codes: str = None):
 
 @bean.sys_exit
 def main(money_type, *, codes: str = None):
-    process = action.Process(money_type, codes=codes)
-    print(process.msg)
+    processor = process.Process(money_type, codes=codes)
+    print(processor.msg)
 
 
 if __name__ == '__main__':
