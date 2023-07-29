@@ -1,20 +1,27 @@
 # 股票、基金的估值
-基于东方财富网API实现的的估值查询功能，可通过 `命令行` 、`网络请求` 等进行交互。
+基于东方财富网API实现的的估值查询。
+
+包含功能：
+* 命令行查询
+* 网络请求查询
+* 定时通知
+
 
 # TODO
-* 信息通知
-* 服务部署（定时查询关注）
+* 日志
+
 
 # 内部设计
 1. 通过指定类型 `(fund/stock)` 和指定代码，可直接查询估值等数据
 2. 通过预先关注，可快捷查询关注列表中的估值等数据
+
 
 # 使用指南
 
 ## 命令行
 * 入口文件：`command.py`
 
-### 查询操作
+### 查询
 * 直接查询
     ```shell
   # python command.py -t <类型> -c <代码>
@@ -33,7 +40,7 @@
     * -t: 类型 `<type>`。`fund: 基金；stock: 股票`
     * -c: 代码 `<code>`
 
-### 关注操作
+### 关注
 ```shell
 python command.py --command=<操作类型> -t <类型> [-c <代码>]
 
@@ -47,8 +54,11 @@ python command.py --command='add' -t 'fund' -c '161725,003096'
 python command.py --command='delete' -t 'fund' -c '161725,003096'
 ```
 
-## http请求
+## <a id="http">http请求</a>
 * 入口文件：`app.py`
+
+注：
+* 附带[定时推送](#scheduler)功能
 
 ### 启动
 * 直接启动：`python app.py`
@@ -56,6 +66,10 @@ python command.py --command='delete' -t 'fund' -c '161725,003096'
 * 容器化：
   * 构建镜像：`docker build -t <image_name> .`
   * 启动容器：`docker run -d --name=<container_name> -p 8888:8888 <image_id>`
+  * 可选参数：
+    * `-e PORT=<port>`: 指定启动端口
+    * `-v <本地路径>:/data/money/data`: 数据文件
+    * `-v <本地路径>:/data/money/conf`: 配置文件
 
 ### 查询
 ```text
@@ -81,3 +95,17 @@ http://127.0.0.1:8888/watch/add?type=fund&codes=161725,003096
 # 示例： 删除某个关注的基金：161725、003096
 http://127.0.0.1:8888/watch/delete?type=fund&codes=161725,003096
 ```
+
+## <a id="scheduler">定时推送</a>
+* 入口文件：`scheduler.py`
+
+### 启动
+* 直接启动：`python scheduler.py`
+* 依赖于app：通过开启 http 服务来启动。详见 [http请求](#http)
+
+### 其他
+* 配置文件：conf/config.yaml
+  * FeiShuRobotUrl: [飞书群的机器人地址](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)
+  * ChanKey: [Server酱服务的key](https://sct.ftqq.com/)
+  * FundCron: 基金的定时任务（[crontab格式](https://crontab.guru/#*_*_*_*_*)）
+  * StockCron: 股票的定时任务（crontab格式）
