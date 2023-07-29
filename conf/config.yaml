@@ -1,0 +1,14 @@
+# 飞书机器人
+FeiShuRobotUrl: ''
+
+# Server酱
+ChanKey: ''
+
+# 定时
+## 基金
+FundCron:
+  - ''
+
+## 股票
+StockCron:
+  - ''

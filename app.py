@@ -11,8 +11,23 @@ from fastapi import FastAPI, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
 
 from module import process, watch
+from utils import utils
+import scheduler
+
 
 app = FastAPI()
+
+
+# 程序启动
+@app.on_event("startup")
+async def startup_event():
+    await scheduler.start_scheduler()
+
+
+# 程序终止
+@app.on_event("shutdown")
+async def shutdown_event():
+    await scheduler.stop_scheduler()
 
 
 # 全局异常捕获
@@ -47,7 +62,7 @@ def search(
     return {
         'code': 200,
         'data': processor.data,
-        'message': processor.msg,
+        'message': f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.msg}',
     }
 
 

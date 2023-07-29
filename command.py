@@ -7,6 +7,7 @@ import getopt
 import sys
 
 from module import process, watch, bean
+from utils import utils
 
 
 @bean.sys_exit
@@ -25,7 +26,7 @@ def command(cmd, *, money_type, codes: str = None):
 @bean.sys_exit
 def main(money_type, *, codes: str = None):
     processor = process.Process(money_type, codes=codes)
-    print(processor.msg)
+    print(f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.msg}')
 
 
 if __name__ == '__main__':

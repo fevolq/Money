@@ -89,13 +89,12 @@ class Process:
         return result
 
     def gen_message(self):
-        content = f'【{self.title}】{utils.asia_local_time()}\n\n'
         tmp = [f'{row["name"]} [{row["code"]}]\n'
                f'当日基准：{row["init_worth"]}\n'
                f'当前最新：{row["current_worth"]}\n'
                f'涨跌幅：{row["rate"]}\n'
                f'数据时间：{row["time"]}'
                for row in self.data if self.data]
-        content += '\n\n'.join(tmp)
+        content = '\n\n'.join(tmp)
 
         return content
