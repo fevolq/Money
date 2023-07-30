@@ -1,7 +1,7 @@
 #!-*- coding:utf-8 -*-
 # python3.7
 # CreateTime: 2023/7/29 14:31
-# FileName: 异步定时任务
+# FileName: 定时推送
 
 import asyncio
 
@@ -14,6 +14,7 @@ import config
 # 创建一个异步调度器
 scheduler = AsyncIOScheduler()
 
+# 注册定时任务
 for index, cron in enumerate(config.FundCron):
     if not cron:
         continue

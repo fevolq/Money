@@ -3,7 +3,7 @@
 # CreateTime: 2023/7/27 17:47
 # FileName:
 
-from typing import Union
+from typing import Union, List
 
 from api import eastmoney
 from utils import utils
@@ -59,7 +59,8 @@ class Process:
 
         return self.codes
 
-    def get_data(self):
+    def get_data(self) -> List:
+        """获取最新数据"""
         result = []
 
         codes = self._get_codes()

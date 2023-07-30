@@ -1,7 +1,7 @@
 #!-*- coding:utf-8 -*-
 # python3.7
 # CreateTime: 2023/7/28 15:27
-# FileName:
+# FileName: 基于FastAPI的app
 
 from enum import Enum
 from typing import Union
@@ -13,7 +13,6 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 from module import process, watch
 from utils import utils
 import scheduler
-
 
 app = FastAPI()
 
@@ -58,6 +57,7 @@ def search(
         money_type: MoneyType,
         codes: Union[str, None] = Query(default=None),
 ):
+    """查询操作"""
     processor = process.Process(money_type, codes=codes)
     return {
         'code': 200,
@@ -72,6 +72,7 @@ def do_watch(
         money_type: MoneyType = Query(alias='type'),
         codes: Union[str, None] = Query(default=None),
 ):
+    """关注操作"""
     if watch_type in ('add', 'delete'):
         assert codes, '缺少参数'
 

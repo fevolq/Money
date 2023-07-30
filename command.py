@@ -1,7 +1,7 @@
 #!-*- coding:utf-8 -*-
 # python3.7
 # CreateTime: 2023/7/27 17:46
-# FileName: 命令行
+# FileName: 命令行交互
 
 import getopt
 import sys
@@ -12,6 +12,7 @@ from utils import utils
 
 @bean.sys_exit
 def command(cmd, *, money_type, codes: str = None):
+    """关注操作"""
     actions = {
         'add': watch.add,
         'get': watch.get,
@@ -24,7 +25,8 @@ def command(cmd, *, money_type, codes: str = None):
 
 
 @bean.sys_exit
-def main(money_type, *, codes: str = None):
+def search(money_type, *, codes: str = None):
+    """查询操作"""
     processor = process.Process(money_type, codes=codes)
     print(f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.msg}')
 
@@ -51,9 +53,10 @@ if __name__ == '__main__':
     if opts.get("--command"):
         test_cmd = str(opts.get("--command"))
 
-    assert test_money_type, '缺少type'
+    if not test_money_type:
+        sys.exit('缺少type')
 
     if test_cmd:
         command(test_cmd, money_type=test_money_type, codes=test_codes)
     else:
-        main(test_money_type, codes=test_codes)
+        search(test_money_type, codes=test_codes)

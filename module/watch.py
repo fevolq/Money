@@ -8,7 +8,6 @@ import os
 
 from module import bean
 
-
 watch_path = os.path.join(os.path.abspath(__file__), '../../data/watch.json').replace('\\', '/')
 
 
@@ -31,7 +30,7 @@ def add(money_type, *, codes: [str]):
     data = load_watch()
 
     record_codes = data.get(money_type, [])
-    sub = set([str(code) for code in codes]) - set(record_codes)        # 取不存在记录中的code
+    sub = set([str(code) for code in codes]) - set(record_codes)  # 取不存在记录中的code
     record_codes.extend(list(filter(lambda code: code, sub)))
     data[money_type] = record_codes
 

@@ -9,8 +9,8 @@ import time
 import pytz
 
 
-def asia_local_time(fmt="%Y-%m-%d %H:%M:%S"):
-    return datetime.datetime.strftime(datetime.datetime.now(pytz.timezone('Asia/Shanghai')), fmt)
+def asia_local_time(fmt="%Y-%m-%d %H:%M:%S", tz="Asia/Shanghai"):
+    return datetime.datetime.strftime(datetime.datetime.now(pytz.timezone(tz)), fmt)
 
 
 def time2str(t=None, fmt="%Y-%m-%d %H:%M:%S") -> str:

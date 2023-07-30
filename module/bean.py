@@ -13,6 +13,7 @@ def check_money_type(index=None):
     :param index: 类型参数在参数的位置
     :return:
     """
+
     def check(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -24,7 +25,9 @@ def check_money_type(index=None):
                 sys.exit('类型未匹配!')
 
             return func(*args, **kwargs)
+
         return wrapper
+
     return check
 
 
@@ -38,4 +41,5 @@ def sys_exit(func):
             sys.exit(str(e))
 
         return result
+
     return wrapper
