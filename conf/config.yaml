@@ -1,3 +1,6 @@
+# 定时任务的时区
+CronZone: 'Asia/Shanghai'
+
 # 飞书机器人
 FeiShuRobotUrl: ''
 

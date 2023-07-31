@@ -14,6 +14,9 @@ FeiShuRobotUrl = ''
 # Server酱
 ChanKey = ''
 
+# 定时任务的时区
+CronZone = ''
+
 # 基金任务
 FundCron = [
 
