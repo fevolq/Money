@@ -20,13 +20,16 @@ async def send_watch(money_type, choke=False):
     print(f'{utils.asia_local_time()}: Start send watch —— {money_type}')
 
     async def send(processor):
-        if processor.data:
+        if processor and processor.data:
             send_msg.feishu_robot_msg(config.FeiShuRobotUrl, content=processor.msg,
                                       title=f'【{processor.title}】{utils.asia_local_time()}')
             send_msg.chan_msg(processor.title, processor.msg, key=config.ChanKey)
 
     async def money():
-        processor = process.Process(money_type)
+        try:
+            processor = process.Process(money_type)
+        except AssertionError:
+            processor = None
         await send(processor)
 
     if choke:
