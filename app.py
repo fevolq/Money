@@ -63,6 +63,7 @@ def search(
         'code': 200,
         'data': processor.get_data(),
         'message': f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.get_message()}',
+        'fields': processor.get_fields()
     }
 
 

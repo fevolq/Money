@@ -83,6 +83,9 @@ class Process:
 
         return content
 
+    def get_fields(self):
+        return self.datas_obj[0].get_fields() if self.datas_obj else {}
+
 
 @bean.check_money_type(0)
 def get_money_data_obj(money_type, data):
@@ -94,27 +97,33 @@ def get_money_data_obj(money_type, data):
 
 class StockData:
     relate_fields = {
-        'code': 'f57',
-        'name': 'f58',
-        'start_worth': 'f46',
-        'standard_worth': 'f60',
-        'current_worth': 'f43',
-        'rate': '',
-        'time': 'f86',
+        'code': {'field': 'f57', 'label': '代码'},
+        'name': {'field': 'f58', 'label': '名称'},
+        'start_worth': {'field': 'f46', 'label': '开始值'},
+        'standard_worth': {'field': 'f60', 'label': '基准值'},
+        'current_worth': {'field': 'f43', 'label': '当前值'},
+        'rate': {'field': '', 'label': '涨跌幅'},
+        'time': {'field': 'f86', 'label': '数据时间'},
     }
 
     def __init__(self, data):
         self._data = self._resolve_data(data)
 
+    def _get_relate_field(self, field):
+        return self.relate_fields[field]['field'] if field in self.relate_fields else ''
+
+    def _get_relate_label(self, field):
+        return self.relate_fields[field]['label'] if field in self.relate_fields else ''
+
     def _resolve_data(self, data):
         # 处理原始数据
-        data['time'] = utils.time2str(data[self.relate_fields['time']])
+        data['time'] = utils.time2str(data[self._get_relate_field('time')])
         point = 10 ** int(data['f59'])
         for field in ('start_worth', 'standard_worth', 'current_worth'):
-            data[self.relate_fields[field]] = data[self.relate_fields[field]] / point
+            data[self._get_relate_field(field)] = data[self._get_relate_field(field)] / point
 
         # 获取指定数据
-        result = {field: data.get(relation, '') for field, relation in self.relate_fields.items()}
+        result = {field: data.get(self._get_relate_field(field), '') for field in self.relate_fields}
         if result['standard_worth'] and result['current_worth']:
             rate = (float(result['current_worth']) - float(result['standard_worth'])) / float(
                 result['standard_worth'])
@@ -127,30 +136,43 @@ class StockData:
 
     def get_message(self):
         return f'{self._data["name"]} [{self._data["code"]}]\n' \
-               f'当日基准：{self._data["standard_worth"]}\n' \
-               f'当日初始：{self._data["start_worth"]}\n' \
-               f'当前最新：{self._data["current_worth"]}\n' \
-               f'涨跌幅：{self._data["rate"]}\n' \
-               f'数据时间：{self._data["time"]}'
+               f'{self._get_relate_label("standard_worth")}：{self._data["standard_worth"]}\n' \
+               f'{self._get_relate_label("start_worth")}：{self._data["start_worth"]}\n' \
+               f'{self._get_relate_label("current_worth")}：{self._data["current_worth"]}\n' \
+               f'{self._get_relate_label("rate")}：{self._data["rate"]}\n' \
+               f'{self._get_relate_label("time")}：{self._data["time"]}'
+
+    def get_fields(self):
+        return {field: self.relate_fields[field]['label'] for field in self.relate_fields}
 
 
 class FundData:
     relate_fields = {
-        'code': 'fundcode',
-        'name': 'name',
-        'start_worth': 'dwjz',
-        'current_worth': 'gsz',
-        'rate': 'gszzl',
-        'time': 'gztime',
+        'code': {'field': 'fundcode', 'label': '代码'},
+        'name': {'field': 'name', 'label': '名称'},
+        'start_worth': {'field': 'dwjz', 'label': '开始值'},
+        'current_worth': {'field': 'gsz', 'label': '当前值'},
+        'rate': {'field': 'gszzl', 'label': '涨跌幅'},
+        'time': {'field': 'gztime', 'label': '数据时间'},
     }
 
     def __init__(self, data):
         self._data = self._resolve_data(data)
 
+    def _get_relate_field(self, field):
+        return self.relate_fields[field]['field'] if field in self.relate_fields else ''
+
+    def _get_relate_label(self, field):
+        return self.relate_fields[field]['label'] if field in self.relate_fields else ''
+
     def _resolve_data(self, data):
         # 获取指定数据
-        result = {field: data.get(relation, '') for field, relation in self.relate_fields.items()}
+        result = {field: data.get(self._get_relate_field(field), '') for field in self.relate_fields}
         result['rate'] = f'{result["rate"]}%'
+        for field in ('start_worth', 'current_worth'):
+            if not result[field]:
+                continue
+            result[field] = float(result[field])
 
         return result
 
@@ -159,7 +181,10 @@ class FundData:
 
     def get_message(self):
         return f'{self._data["name"]} [{self._data["code"]}]\n' \
-               f'当日初始：{self._data["start_worth"]}\n' \
-               f'当前最新：{self._data["current_worth"]}\n' \
-               f'涨跌幅：{self._data["rate"]}\n' \
-               f'数据时间：{self._data["time"]}'
+               f'{self._get_relate_label("start_worth")}：{self._data["start_worth"]}\n' \
+               f'{self._get_relate_label("current_worth")}：{self._data["current_worth"]}\n' \
+               f'{self._get_relate_label("rate")}：{self._data["rate"]}\n' \
+               f'{self._get_relate_label("time")}：{self._data["time"]}'
+
+    def get_fields(self):
+        return {field: self.relate_fields[field]['label'] for field in self.relate_fields}
