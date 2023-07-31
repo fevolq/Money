@@ -117,7 +117,7 @@ class StockData:
 
     def _resolve_data(self, data):
         # 处理原始数据
-        data['time'] = utils.time2str(data[self._get_relate_field('time')])
+        data[self._get_relate_field('time')] = utils.time2str(data[self._get_relate_field('time')])
         point = 10 ** int(data['f59'])
         for field in ('start_worth', 'standard_worth', 'current_worth'):
             data[self._get_relate_field(field)] = data[self._get_relate_field(field)] / point
