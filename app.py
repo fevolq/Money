@@ -61,8 +61,8 @@ def search(
     processor = process.Process(money_type, codes=codes)
     return {
         'code': 200,
-        'data': processor.data,
-        'message': f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.msg}',
+        'data': processor.get_data(),
+        'message': f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.get_message()}',
     }
 
 

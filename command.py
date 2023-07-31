@@ -28,7 +28,7 @@ def command(cmd, *, money_type, codes: str = None):
 def search(money_type, *, codes: str = None):
     """查询操作"""
     processor = process.Process(money_type, codes=codes)
-    print(f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.msg}')
+    print(f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.get_message()}')
 
 
 if __name__ == '__main__':

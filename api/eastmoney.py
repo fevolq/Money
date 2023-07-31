@@ -67,7 +67,8 @@ class Stock:
         'f52': 'min_limit',  # 跌停（分）
         'f57': 'code',  # 代码
         'f58': 'name',  # 名称
-        'f59': 'point',      # 小数点位数（与“元”相比）
+        'f59': 'point',  # 小数点位数（与“元”相比）
+        'f60': 'standard',  # 基准
         'f86': 'timestamp',  # 时间戳（分钟）
     }
 
@@ -247,9 +248,10 @@ class Fund:
 
 
 if __name__ == '__main__':
+    pass
     # stocks = Stock().fetch_stocks()
     # with open('stocks.json', 'w', encoding='utf-8') as f:
     #     json.dump(stocks, f, indent=4, ensure_ascii=False)
 
-    Stock().fetch_stock_current_detail('161226')
+    # Stock().fetch_stock_current_detail('161226')
     # EastMoney('stock').fetch_current('161226')

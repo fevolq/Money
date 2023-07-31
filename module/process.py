@@ -15,7 +15,8 @@ class Process:
         'stock': {
             'code': 'f57',
             'name': 'f58',
-            'init_worth': 'f46',
+            'start_worth': 'f46',
+            'standard_worth': 'f60',
             'current_worth': 'f43',
             'rate': '',
             'time': 'f86',
@@ -23,9 +24,9 @@ class Process:
         'fund': {
             'code': 'fundcode',
             'name': 'name',
-            'init_worth': 'dwjz',
+            'start_worth': 'dwjz',
             'current_worth': 'gsz',
-            'rate': '',
+            'rate': 'gszzl',
             'time': 'gztime',
         }
     }
@@ -46,8 +47,10 @@ class Process:
             'fund': '基金',
         }[self.money_type]
 
-        self.data = self.get_data()
-        self.msg = self.gen_message()
+        self.datas = self.load()
+
+        # 对原始数据进行展示处理
+        self.datas_obj = [get_money_data_obj(self.money_type, data) for data in self.datas]
 
     def _get_codes(self):
         if not self.codes:
@@ -59,44 +62,104 @@ class Process:
 
         return self.codes
 
-    def get_data(self) -> List:
-        """获取最新数据"""
-        result = []
-
+    def load(self):
+        """获取最新原始数据"""
+        datas = []
         codes = self._get_codes()
         for code in codes:
             data, ok = self.api.fetch_current(code)
             if not ok or not data:
                 continue
 
-            if self.money_type == 'stock':
-                # 将两个模式的数据匹配成相同格式
-                point = 10 ** int(data['f59'])
-                data[self.relation_fields[self.money_type]['time']] = utils.time2str(
-                    data[self.relation_fields[self.money_type]['time']])
-                data[self.relation_fields[self.money_type]['init_worth']] = data[self.relation_fields[self.money_type][
-                    'init_worth']] / point
-                data[self.relation_fields[self.money_type]['current_worth']] = data[self.relation_fields[
-                    self.money_type]['current_worth']] / point
+            datas.append(data)
+        return datas
 
-            tmp_result = {field: data.get(relation, '') for field, relation in
-                          self.relation_fields[self.money_type].items()}
-            if tmp_result['init_worth'] and tmp_result['current_worth']:
-                rate = (float(tmp_result['current_worth']) - float(tmp_result['init_worth'])) / float(
-                    tmp_result['init_worth'])
-                tmp_result['rate'] = f'{"%.2f" % (rate * 100)}%'
+    def get_data(self) -> List:
+        return [data_obj.get_data() for data_obj in self.datas_obj]
 
-            result.append(tmp_result)
+    def get_message(self) -> str:
+        all_msg = [data_obj.get_message() for data_obj in self.datas_obj]
+        content = '\n\n'.join(all_msg)
+
+        return content
+
+
+@bean.check_money_type(0)
+def get_money_data_obj(money_type, data):
+    return {
+        'stock': StockData,
+        'fund': FundData,
+    }[money_type](data)
+
+
+class StockData:
+    relate_fields = {
+        'code': 'f57',
+        'name': 'f58',
+        'start_worth': 'f46',
+        'standard_worth': 'f60',
+        'current_worth': 'f43',
+        'rate': '',
+        'time': 'f86',
+    }
+
+    def __init__(self, data):
+        self._data = self._resolve_data(data)
+
+    def _resolve_data(self, data):
+        # 处理原始数据
+        data['time'] = utils.time2str(data[self.relate_fields['time']])
+        point = 10 ** int(data['f59'])
+        for field in ('start_worth', 'standard_worth', 'current_worth'):
+            data[self.relate_fields[field]] = data[self.relate_fields[field]] / point
+
+        # 获取指定数据
+        result = {field: data.get(relation, '') for field, relation in self.relate_fields.items()}
+        if result['standard_worth'] and result['current_worth']:
+            rate = (float(result['current_worth']) - float(result['standard_worth'])) / float(
+                result['standard_worth'])
+            result['rate'] = f'{"%.2f" % (rate * 100)}%'
 
         return result
 
-    def gen_message(self):
-        tmp = [f'{row["name"]} [{row["code"]}]\n'
-               f'当日基准：{row["init_worth"]}\n'
-               f'当前最新：{row["current_worth"]}\n'
-               f'涨跌幅：{row["rate"]}\n'
-               f'数据时间：{row["time"]}'
-               for row in self.data if self.data]
-        content = '\n\n'.join(tmp)
+    def get_data(self):
+        return self._data
 
-        return content
+    def get_message(self):
+        return f'{self._data["name"]} [{self._data["code"]}]\n' \
+               f'当日基准：{self._data["standard_worth"]}\n' \
+               f'当日初始：{self._data["start_worth"]}\n' \
+               f'当前最新：{self._data["current_worth"]}\n' \
+               f'涨跌幅：{self._data["rate"]}\n' \
+               f'数据时间：{self._data["time"]}'
+
+
+class FundData:
+    relate_fields = {
+        'code': 'fundcode',
+        'name': 'name',
+        'start_worth': 'dwjz',
+        'current_worth': 'gsz',
+        'rate': 'gszzl',
+        'time': 'gztime',
+    }
+
+    def __init__(self, data):
+        self._data = self._resolve_data(data)
+
+    def _resolve_data(self, data):
+        # 获取指定数据
+        result = {field: data.get(relation, '') for field, relation in self.relate_fields.items()}
+        result['rate'] = f'{result["rate"]}%'
+
+        return result
+
+    def get_data(self):
+        return self._data
+
+    def get_message(self):
+        return f'{self._data["name"]} [{self._data["code"]}]\n' \
+               f'当日初始：{self._data["start_worth"]}\n' \
+               f'当前最新：{self._data["current_worth"]}\n' \
+               f'涨跌幅：{self._data["rate"]}\n' \
+               f'数据时间：{self._data["time"]}'
