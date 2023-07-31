@@ -6,7 +6,7 @@
 from typing import Union, List
 
 from api import eastmoney
-from utils import utils
+from utils import utils, pools
 from module import bean, watch
 
 
@@ -64,14 +64,22 @@ class Process:
 
     def load(self):
         """获取最新原始数据"""
-        datas = []
         codes = self._get_codes()
-        for code in codes:
-            data, ok = self.api.fetch_current(code)
-            if not ok or not data:
-                continue
 
-            datas.append(data)
+        def one(code):
+            data, ok = self.api.fetch_current(code)
+            if ok and data:
+                return data
+
+        # # 单线程
+        # datas = []
+        # for code_ in codes:
+        #     data_ = one(code_)
+        #     datas.append(data_)
+
+        # 多线程
+        args_list = [[(code_,)] for code_ in codes]
+        datas = pools.execute_thread(one, args_list)
         return datas
 
     def get_data(self) -> List:
