@@ -55,10 +55,10 @@ class Stock:
     """股票"""
 
     detail_fields = {
-        'f43': 'current',  # 最新（分）
-        'f44': 'highest',  # 最高（分）
-        'f45': 'lowest',  # 最低（分）
-        'f46': 'start',  # 今开（分）
+        'f43': 'current',  # 最新（分/毫 等，具体进制参考）
+        'f44': 'highest',  # 最高（分/毫 等，具体进制参考）
+        'f45': 'lowest',  # 最低（分/毫 等，具体进制参考）
+        'f46': 'start',  # 今开（分/毫 等，具体进制参考）
         'f47': 'total_hand',  # 总手
         'f48': 'total_amount',  # 金额（元）
         'f49': 'external_disk',  # 外盘（元）
@@ -67,6 +67,7 @@ class Stock:
         'f52': 'min_limit',  # 跌停（分）
         'f57': 'code',  # 代码
         'f58': 'name',  # 名称
+        'f59': 'point',      # 小数点位数（与“元”相比）
         'f86': 'timestamp',  # 时间戳（分钟）
     }
 

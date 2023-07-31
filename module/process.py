@@ -71,12 +71,13 @@ class Process:
 
             if self.money_type == 'stock':
                 # 将两个模式的数据匹配成相同格式
+                point = 10 ** int(data['f59'])
                 data[self.relation_fields[self.money_type]['time']] = utils.time2str(
                     data[self.relation_fields[self.money_type]['time']])
                 data[self.relation_fields[self.money_type]['init_worth']] = data[self.relation_fields[self.money_type][
-                    'init_worth']] / 1000
+                    'init_worth']] / point
                 data[self.relation_fields[self.money_type]['current_worth']] = data[self.relation_fields[
-                    self.money_type]['current_worth']] / 1000
+                    self.money_type]['current_worth']] / point
 
             tmp_result = {field: data.get(relation, '') for field, relation in
                           self.relation_fields[self.money_type].items()}
