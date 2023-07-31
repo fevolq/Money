@@ -29,7 +29,7 @@ StockCron = [
 # ---------------------------覆盖配置----------------------------------
 # 从配置文件读取
 try:
-    with open(os.path.join(os.path.abspath(__file__), '../conf/config.yaml').replace('\\', '/'), 'r', encoding='utf-8') as file:
+    with open('conf/config.yaml', 'r', encoding='utf-8') as file:
         data = yaml.safe_load(file)
 
     for k, v in data.items():
