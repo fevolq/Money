@@ -10,7 +10,8 @@
 
 # TODO
 
-* 日志
+<input type="checkbox" checked> 多线程<br>
+<input type="checkbox" > 监控股票基金的成本涨跌幅、净值阈值<br>
 
 # 安装
 
@@ -85,7 +86,7 @@ python command.py --command='delete' -t 'fund' -c '161725,003096'
 * 直接启动：`python app.py`
 * 基于uvicorn：`uvicorn app:app`
 * 容器化：
-    * 构建镜像：`docker build -t <image_name> .`
+    * 构建镜像：`docker build -t <image_name> .`，也可使用以构建好的镜像：`docker pull infq/money`
     * 启动容器：`docker run -d --name=<container_name> -p 8888:8888 <image_id>`
     * 可选参数：
         * `-e PORT=<port>`: 指定启动端口
