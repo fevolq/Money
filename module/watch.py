@@ -7,8 +7,11 @@ import json
 import os
 
 from module import bean
+from utils import utils
 
-watch_path = 'data/watch.json'
+folder_path = 'data'
+file_name = 'watch.json'
+watch_path = os.path.join(folder_path, file_name)
 
 
 def load_watch() -> dict:
@@ -20,6 +23,7 @@ def load_watch() -> dict:
 
 
 def save_watch(data):
+    utils.mkdir(folder_path)
     with open(watch_path, 'w') as f:
         json.dump(data, f, indent=4, ensure_ascii=False, sort_keys=True)
 

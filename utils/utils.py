@@ -4,6 +4,7 @@
 # FileName:
 
 import datetime
+import os
 import time
 
 import pytz
@@ -22,3 +23,8 @@ def time2str(t=None, fmt="%Y-%m-%d %H:%M:%S") -> str:
     """
     t = time.time() if t is None else t
     return time.strftime(fmt, time.localtime(t))
+
+
+def mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
