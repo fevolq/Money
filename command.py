@@ -6,17 +6,18 @@
 import getopt
 import sys
 
-from module import process, watch, bean
+from module import process, focus, bean
 from utils import utils
 
 
 @bean.sys_exit
 def command(cmd, *, money_type, codes: str = None):
     """关注操作"""
+    foc = focus.Focus('worth')
     actions = {
-        'add': watch.add,
-        'get': watch.get,
-        'delete': watch.delete,
+        'add': foc.add,
+        'get': foc.get,
+        'delete': foc.delete,
     }
     assert cmd.lower() in actions, 'command参数错误'
 

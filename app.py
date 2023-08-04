@@ -10,7 +10,7 @@ import uvicorn
 from fastapi import FastAPI, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
 
-from module import process, watch
+from module import process, focus
 from utils import utils
 import scheduler
 
@@ -78,11 +78,12 @@ def do_watch(
         assert codes, '缺少参数'
 
     resp = {'code': 200}
+    foc = focus.Focus('worth')
 
     actions = {
-        'add': watch.add,
-        'get': watch.get,
-        'delete': watch.delete,
+        'add': foc.add,
+        'get': foc.get,
+        'delete': foc.delete,
     }
     resp['data'], resp['msg'] = actions[watch_type](money_type,
                                                     codes=[str(code) for code in codes.split(',')] if codes else None)

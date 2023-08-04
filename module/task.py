@@ -10,14 +10,14 @@ from utils import send_msg, utils
 import config
 
 
-async def send_watch(money_type, choke=False):
+async def worth(money_type, choke=False):
     """
-
+    关注的股票基金的净值
     :param money_type:
     :param choke: 是否阻塞。避免单线的定时调度相互阻塞
     :return:
     """
-    print(f'{utils.asia_local_time()}: Start send watch —— {money_type}')
+    print(f'{utils.asia_local_time()}: Start send worth —— {money_type}')
 
     async def send(processor: process.Process):
         if processor and processor.datas:
@@ -38,5 +38,16 @@ async def send_watch(money_type, choke=False):
         asyncio.create_task(money())
 
 
+async def monitor(money_type, choke=False):
+    """
+    关注的股票基金的监控
+    :param money_type:
+    :param choke:
+    :return:
+    """
+    print(f'{utils.asia_local_time()}: Start monitor —— {money_type}')
+    pass
+
+
 if __name__ == '__main__':
-    asyncio.run(send_watch('stock', choke=True))
+    asyncio.run(worth('stock', choke=True))

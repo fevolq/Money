@@ -21,7 +21,7 @@ def check_money_type(index=None):
                 money_type = kwargs['money_type']
             else:
                 money_type = args[index]
-            if money_type.lower() not in ('stock', 'fund'):
+            if money_type not in ('stock', 'fund'):
                 sys.exit('类型未匹配!')
 
             return func(*args, **kwargs)

@@ -21,7 +21,7 @@ for index, cron in enumerate(config.FundCron):
 
     trigger = CronTrigger.from_crontab(cron, config.CronZone)
 
-    scheduler.add_job(task.send_watch, args=('fund',), trigger=trigger, id=f'fund_{index}', name=f'Fund Task {index}')
+    scheduler.add_job(task.worth, args=('fund',), trigger=trigger, id=f'fund_{index}', name=f'Fund Task {index}')
 
 for index, cron in enumerate(config.StockCron):
     if not cron:
@@ -29,7 +29,7 @@ for index, cron in enumerate(config.StockCron):
 
     trigger = CronTrigger.from_crontab(cron, config.CronZone)
 
-    scheduler.add_job(task.send_watch, args=('stock',), trigger=trigger, id=f'stock_{index}',
+    scheduler.add_job(task.worth, args=('stock',), trigger=trigger, id=f'stock_{index}',
                       name=f'Stock Task {index}')
 
 

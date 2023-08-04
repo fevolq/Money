@@ -10,8 +10,8 @@
 
 # TODO
 
-<input type="checkbox" checked> 多线程<br>
-<input type="checkbox" > 监控股票基金的成本涨跌幅、净值阈值<br>
+1. [x] 多线程
+2. [ ] 监控股票基金的成本涨跌幅、净值阈值
 
 # 安装
 

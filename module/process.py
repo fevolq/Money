@@ -7,7 +7,7 @@ from typing import Union, List
 
 from api import eastmoney
 from utils import utils, pools
-from module import bean, watch
+from module import bean, focus
 
 
 class Process:
@@ -46,6 +46,7 @@ class Process:
             'stock': '股票',
             'fund': '基金',
         }[self.money_type]
+        self.foc = focus.Focus('worth')
 
         self.datas = self.load()
 
@@ -54,9 +55,7 @@ class Process:
 
     def _get_codes(self):
         if not self.codes:
-            data = watch.load_watch()
-            if data.get(self.money_type):
-                self.codes = data[self.money_type]
+            self.codes, _ = self.foc.get(self.money_type)
 
             assert self.codes, '无关注项，请添加关注后再来。'
 
