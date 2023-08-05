@@ -11,25 +11,6 @@ from module import bean, watch
 
 
 class Process:
-    relation_fields = {
-        'stock': {
-            'code': 'f57',
-            'name': 'f58',
-            'start_worth': 'f46',
-            'standard_worth': 'f60',
-            'current_worth': 'f43',
-            'rate': '',
-            'time': 'f86',
-        },
-        'fund': {
-            'code': 'fundcode',
-            'name': 'name',
-            'start_worth': 'dwjz',
-            'current_worth': 'gsz',
-            'rate': 'gszzl',
-            'time': 'gztime',
-        }
-    }
 
     @bean.check_money_type(1)
     def __init__(self, money_type, *, codes: Union[str, int] = None):
