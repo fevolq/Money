@@ -21,9 +21,12 @@ async def send_watch(money_type, choke=False):
 
     async def send(processor: process.Process):
         if processor and processor.datas:
-            send_msg.feishu_robot_msg(config.FeiShuRobotUrl, content=processor.get_message(),
+            message = processor.get_message(is_open=True)
+            if not message:
+                return
+            send_msg.feishu_robot_msg(config.FeiShuRobotUrl, content=message,
                                       title=f'【{processor.title}】{utils.asia_local_time()}')
-            send_msg.chan_msg(processor.title, processor.get_message(), key=config.ChanKey)
+            send_msg.chan_msg(processor.title, content=message, key=config.ChanKey)
 
     async def money():
         try:

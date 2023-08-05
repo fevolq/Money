@@ -11,7 +11,7 @@ from utils import utils
 
 folder_path = 'data'
 file_name = 'watch.json'
-watch_path = os.path.join(folder_path, file_name)
+watch_path = os.path.join(folder_path, file_name).replace('\\', '/')
 
 
 def load_watch() -> dict:

@@ -51,23 +51,49 @@ class Process:
             data, ok = self.api.fetch_current(code)
             if ok and data:
                 return data
+            return None
 
         # # 单线程
         # datas = []
-        # for code_ in codes:
-        #     data_ = one(code_)
-        #     datas.append(data_)
+        # for _code in codes:
+        #     _data = one(_code)
+        #     if not _data:
+        #         continue
+        #     datas.append(_data)
 
         # 多线程
-        args_list = [[(code_,)] for code_ in codes]
-        datas = pools.execute_thread(one, args_list)
+        args_list = [[(_code,)] for _code in codes]
+        result = pools.execute_thread(one, args_list)
+        datas = list(filter(lambda _data: _data, result))
         return datas
 
-    def get_data(self) -> List:
-        return [data_obj.get_data() for data_obj in self.datas_obj]
+    def get_data(self, is_open=False) -> List:
+        """
+        获取数据
+        :param is_open: 是否过滤掉今日未开市的数据
+        :return:
+        """
+        # return [data_obj.get_data() for data_obj in self.datas_obj if not is_open and data_obj.opening]
+        result = []
+        for data_obj in self.datas_obj:
+            if is_open and not data_obj.opening:
+                continue
+            result.append(data_obj.get_data())
+        return result
 
-    def get_message(self) -> str:
-        all_msg = [data_obj.get_message() for data_obj in self.datas_obj]
+    def get_message(self, is_open=False) -> str:
+        """
+        获取信息
+        :param is_open: 是否过滤掉今日未开市的数据
+        :return:
+        """
+        # all_msg = [data_obj.get_message() for data_obj in self.datas_obj if data_obj.opening]
+        all_msg = []
+        for data_obj in self.datas_obj:
+            if is_open and not data_obj.opening:
+                continue
+            all_msg.append(data_obj.get_message())
+
         content = '\n\n'.join(all_msg)
 
         return content
@@ -96,6 +122,7 @@ class StockData:
     }
 
     def __init__(self, data):
+        self.opening = True  # 是否开市
         self._data = self._resolve_data(data)
 
     def _get_relate_field(self, field):
@@ -105,6 +132,10 @@ class StockData:
         return self.relate_fields[field]['label'] if field in self.relate_fields else ''
 
     def _resolve_data(self, data):
+        data_time = utils.time2str(data[self._get_relate_field('time')], fmt='%Y-%m-%d')
+        if data_time != utils.asia_local_time(fmt='%Y-%m-%d'):
+            self.opening = False
+
         # 处理原始数据
         data[self._get_relate_field('time')] = utils.time2str(data[self._get_relate_field('time')])
         point = 10 ** int(data['f59'])
@@ -146,6 +177,7 @@ class FundData:
     }
 
     def __init__(self, data):
+        self.opening = True  # 是否开市
         self._data = self._resolve_data(data)
 
     def _get_relate_field(self, field):
@@ -155,7 +187,11 @@ class FundData:
         return self.relate_fields[field]['label'] if field in self.relate_fields else ''
 
     def _resolve_data(self, data):
-        # 获取指定数据
+        data_time = data[self._get_relate_field('time')].split(' ')[0]
+        if data_time != utils.asia_local_time(fmt='%Y-%m-%d'):
+            self.opening = False
+
+        # 处理原始数据
         result = {field: data.get(self._get_relate_field(field), '') for field in self.relate_fields}
         result['rate'] = f'{result["rate"]}%'
         for field in ('start_worth', 'current_worth'):
