@@ -17,13 +17,23 @@ ChanKey = ''
 # 定时任务的时区
 CronZone = ''
 
-# 基金任务
-FundCron = [
+# 基金净值任务
+FundWorthCron = [
 
 ]
 
-# 股票任务
-StockCron = [
+# 股票净值任务
+StockWorthCron = [
+
+]
+
+# 基金监控任务
+FundMonitorCron = [
+
+]
+
+# 股票监控任务
+StockMonitorCron = [
 
 ]
 # ----------------------------------------------------------------

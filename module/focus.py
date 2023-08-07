@@ -1,13 +1,14 @@
 #!-*- coding:utf-8 -*-
 # python3.7
 # CreateTime: 2023/8/4 14:24
-# FileName:
+# FileName: 配置关注
 
 import json
 import os
 import time
 
 from module import bean
+from utils import utils
 
 
 class Focus:
@@ -38,7 +39,7 @@ class Focus:
 
 
 class Worth:
-    path = 'data/worth.json'
+    file_name = 'worth.json'
 
     def __init__(self):
         ...
@@ -49,19 +50,19 @@ class Worth:
     @bean.check_money_type(1)
     def add(self, money_type, *, codes: [str]) -> (bool, str):
         assert codes, '缺少有效代码'
-        data = load(self.path)
+        data = load(self.file_name)
 
         record_codes = data.get(money_type, [])
         sub = set([str(code) for code in codes]) - set(record_codes)  # 取不存在记录中的code
         record_codes.extend(list(filter(lambda code: code, sub)))
         data[money_type] = record_codes
 
-        save(data, self.path)
+        save(data, self.file_name)
         return True, f'{",".join(sub)}添加成功'
 
     @bean.check_money_type(1)
     def get(self, money_type, **kwargs) -> (list, str):
-        data = load(self.path)
+        data = load(self.file_name)
 
         codes = data.get(money_type, [])
 
@@ -72,7 +73,7 @@ class Worth:
     @bean.check_money_type(1)
     def delete(self, money_type, *, codes: [str]) -> (bool, str):
         assert codes, '缺少有效代码'
-        data = load(self.path)
+        data = load(self.file_name)
 
         record_codes = data.get(money_type, [])
 
@@ -81,14 +82,16 @@ class Worth:
             if str(code) in record_codes:
                 hint_codes.append(code)
                 record_codes.remove(str(code))
-        data[money_type] = record_codes
+        if len(hint_codes) == 0:
+            return False, 'id未匹配'
 
-        save(data, self.path)
+        data[money_type] = record_codes
+        save(data, self.file_name)
         return True, f'{",".join(hint_codes)}删除成功'
 
 
 class Monitor:
-    path = 'data/monitor.json'
+    file_name = 'monitor.json'
 
     def __init__(self):
         ...
@@ -97,49 +100,60 @@ class Monitor:
         return '监控'
 
     @bean.check_money_type(1)
-    def add(self, money_type, *, option: {}) -> (bool, str):
-        data = load(self.path)
+    def add(self, money_type, *, option: {}, **kwargs) -> (bool, str):
+        data = load(self.file_name)
 
         options = data.setdefault(money_type, [])
         tmp_option = {
-            'cost': float(option['cost']) if 'cost' in option else None,  # 成本
-            'worth': float(option['worth']) if 'worth' in option else None,  # 净值
-            'growth': abs(float(option['growth'])) if 'growth' in option else None,  # 成本增长率
-            'lessen': abs(float(option['lessen'])) if 'lessen' in option else None,  # 成本减少率
+            'cost': float(option['cost']) if option.get('cost') is not None else None,  # 成本
+            'worth': float(option['worth']) if option.get('worth') is not None else None,  # 净值
+            'growth': abs(float(option['growth'])) if option.get('growth') is not None else None,  # 成本增长率
+            'lessen': abs(float(option['lessen'])) if option.get('lessen') is not None else None,  # 成本减少率
         }
         if any([tmp_option['growth'], tmp_option['lessen']]):
             assert tmp_option['cost'], '缺少成本'
         if len(list(filter(lambda k: tmp_option[k] is not None, tmp_option))) == 0:
             return False, '缺少有效值'
 
+        ids = [_option['id'] for _option in options]
+
+        def gen_hash_id() -> str:
+            hashed = utils.gen_hash(str(time.time()))
+            _id = hashed[:6]
+            if _id in ids:
+                return gen_hash_id()
+            return _id
+
         tmp_option.update({
-            'id': str(time.time()),
+            'id': gen_hash_id(),
             'code': option['code'],
+            'remark': option.get('remark', None),
         })
         options.append(tmp_option)
 
-        save(data, self.path)
+        save(data, self.file_name)
         return True, '添加成功'
 
     @bean.check_money_type(1)
     def get(self, money_type, **kwargs) -> (list, str):
-        data = load(self.path)
+        data = load(self.file_name)
 
         options = data.get(money_type, [])
 
         msg = '暂无配置'
         if options:
             msg = '\n'.join([
-                f'成本：{option["cost"]}，净值阈值：{option["worth"]}，涨幅：{option["growth"]}，跌幅：{option["lessen"]}'
+                f'ID：{option["id"]}，代码：{option["code"]}，成本：{option["cost"]}，净值阈值：{option["worth"]}，'
+                f'涨幅：{option["growth"]}，跌幅：{option["lessen"]}，备注：{option["remark"]}'
                 for option in options
             ])
 
         return options, msg
 
     @bean.check_money_type(1)
-    def delete(self, money_type, *, ids: [str]) -> (bool, str):
+    def delete(self, money_type, *, ids: [str], **kwargs) -> (bool, str):
         assert ids, '缺少有效ID'
-        data = load(self.path)
+        data = load(self.file_name)
 
         options = data.get(money_type, [])
         hint_index = []
@@ -149,21 +163,25 @@ class Monitor:
                 hint_index.append(index)
                 hint_ids.append(option['id'])
 
+        if len(hint_ids) == 0:
+            return False, 'id未匹配'
+
         for index in hint_index[::-1]:
             options.pop(index)
 
         data[money_type] = options
 
-        save(data, self.path)
+        save(data, self.file_name)
         return True, f'{",".join(hint_ids)}删除成功'
 
 
 # 项目的根路径
 root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+folder_path = os.path.join(root_path, 'data')
 
 
-def load(path):
-    path = os.path.join(root_path, path)
+def load(file_name):
+    path = os.path.join(folder_path, file_name)
     data = {}
     if os.path.exists(path):
         with open(path, 'r', encoding='utf-8') as f:
@@ -171,7 +189,8 @@ def load(path):
     return data
 
 
-def save(data, path):
-    path = os.path.join(root_path, path)
-    with open(path, 'w') as f:
+def save(data, file_name):
+    utils.mkdir(folder_path)
+    path = os.path.join(folder_path, file_name)
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False, sort_keys=True)

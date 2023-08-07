@@ -5,21 +5,25 @@
 
 import asyncio
 
-from module import process
+from module.process import WorthProcess, MonitorProcess
 from utils import send_msg, utils
 import config
 
 
-async def worth(money_type, choke=False):
+async def send_money(money_type, *, task_type, choke=False):
     """
-    关注的股票基金的净值
-    :param money_type:
+
+    :param money_type: 基金/股票
+    :param task_type: 任务类型。worth: 净值; monitor: 监控
     :param choke: 是否阻塞。避免单线的定时调度相互阻塞
     :return:
     """
-    print(f'{utils.asia_local_time()}: Start send worth —— {money_type}')
+    process_task = {'worth': WorthProcess, 'monitor': MonitorProcess}
+    assert task_type in process_task, 'error task_type'
 
-    async def send(processor: process.Process):
+    print(f'{utils.asia_local_time()}: Start send {task_type} —— {money_type}')
+
+    async def send(processor: process_task[task_type]):
         if processor and processor.datas:
             message = processor.get_message(is_open=True)
             if not message:
@@ -30,7 +34,7 @@ async def worth(money_type, choke=False):
 
     async def money():
         try:
-            processor = process.Process(money_type)
+            processor = process_task[task_type](money_type)
         except AssertionError:
             processor = None
         await send(processor)
@@ -41,16 +45,5 @@ async def worth(money_type, choke=False):
         asyncio.create_task(money())
 
 
-async def monitor(money_type, choke=False):
-    """
-    关注的股票基金的监控
-    :param money_type:
-    :param choke:
-    :return:
-    """
-    print(f'{utils.asia_local_time()}: Start monitor —— {money_type}')
-    pass
-
-
 if __name__ == '__main__':
-    asyncio.run(worth('stock', choke=True))
+    asyncio.run(send_money('stock', task_type='worth', choke=True))

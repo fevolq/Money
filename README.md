@@ -1,6 +1,6 @@
-# 股票、基金的估值
+# 股票、基金的估值及监控
 
-基于东方财富API实现的的估值查询，可定时推送消息。
+基于东方财富API实现的的估值查询及定时监控，可定时推送消息。
 
 包含功能：
 
@@ -11,7 +11,8 @@
 # TODO
 
 1. [x] 多线程
-2. [ ] 监控股票基金的成本涨跌幅、净值阈值
+2. [x] 监控股票基金的成本涨跌幅、净值阈值
+   1. [x] 避免每日重复告警
 
 # 安装
 
@@ -38,14 +39,14 @@
 
 * 入口文件：`command.py`
 
-### 查询
+### 估值查询
 
 * 直接查询
     ```shell
   # python command.py -t <类型> -c <代码>
   
-  # 示例：查询基金：161725、003096
-  python command.py -t 'fund' -c '161725,003096'
+  # 示例：查询基金：000001、000003
+  python command.py -t 'fund' -c '000001,000003'
     ```
 * 查询关注
   ```shell
@@ -58,7 +59,7 @@
     * -t: 类型 `<type>`。`fund: 基金；stock: 股票`
     * -c: 代码 `<code>`
 
-### 关注
+### （估值）关注配置
 
 ```bash
 python command.py --command=<操作类型> -t <类型> [-c <代码>]
@@ -66,11 +67,11 @@ python command.py --command=<操作类型> -t <类型> [-c <代码>]
 # 示例：查询关注的基金
 python command.py --command='get' -t 'fund'
 
-# 示例：增加关注的基金：161725、003096
-python command.py --command='add' -t 'fund' -c '161725,003096'
+# 示例：增加关注的基金：000001、000003
+python command.py --command='add' -t 'fund' -c '000001,000003'
 
-# 示例：删除某个关注的基金：161725、003096
-python command.py --command='delete' -t 'fund' -c '161725,003096'
+# 示例：删除某个关注的基金：000001、000003
+python command.py --command='delete' -t 'fund' -c '000001,000003'
 ```
 
 ## <a id="http">http请求</a>
@@ -90,34 +91,54 @@ python command.py --command='delete' -t 'fund' -c '161725,003096'
     * 启动容器：`docker run -d --name=<container_name> -p 8888:8888 <image_id>`
     * 可选参数：
         * `-e PORT=<port>`: 指定启动端口
-        * `-v <本地路径>:/data/money/data`: 数据文件
-        * `-v <本地路径>:/data/money/conf`: 配置文件
+        * `-v <本地路径>:/data/money/data`: 数据文件夹
+        * `-v <本地路径>:/data/money/conf`: 配置文件夹
 
-### 查询
+### 估值查询
 
 ```text
 curl -X GET "http://127.0.0.1:8888/search/${type}" --data "codes=${codes}"
 
-# 示例：查询基金：161725、003096
-http://127.0.0.1:8888/search/fund?codes=161725,003096
+# 示例：查询基金：000001、000003
+http://127.0.0.1:8888/search/fund?codes=000001,000003
 
 # 示例：查询所关注的基金
 http://127.0.0.1:8888/search/fund
 ```
 
-### 关注
+### 估值配置
 
 ```text
-curl -X GET "http://127.0.0.1:8888/watch/${command}" --data "type=${type}&codes=${codes}"
+curl -X GET "http://127.0.0.1:8888/focus/worth/${type}/${command}" --data "codes=${codes}"
 
 # 示例：查询关注的基金
-http://127.0.0.1:8888/watch/get?type=fund
+http://127.0.0.1:8888/focus/worth/fund/get
 
-# 示例：增加关注的基金：161725、003096
-http://127.0.0.1:8888/watch/add?type=fund&codes=161725,003096
+# 示例：增加关注的基金：000001、000003
+http://127.0.0.1:8888/focus/worth/fund/add?codes=000001,000003
 
-# 示例： 删除某个关注的基金：161725、003096
-http://127.0.0.1:8888/watch/delete?type=fund&codes=161725,003096
+# 示例： 删除某个关注的基金：000001、000003
+http://127.0.0.1:8888/focus/worth/fund/delete?codes=000001,000003
+```
+
+### 监控配置
+
+```text
+curl -X GET "http://127.0.0.1:8888/focus/monitor/${type}/${command}" --data "code=${code}"
+# 可选参数：code: 代码，worth: 净值阈值（+/-），cost: 成本，growth: 涨幅，lessen: 跌幅，remark: 备注，ids: 需要删除的配置的id
+
+# 示例：查询监控的基金
+http://127.0.0.1:8888/focus/monitor/fund/get
+
+# 示例：增加监控的基金：000001，阈值为2（估值大于等于2时）
+http://127.0.0.1:8888/focus/monitor/fund/add?code=000001&worth=2&remark=测试
+# 示例：增加监控的基金：000001，阈值为2（估值小于等于2时）
+http://127.0.0.1:8888/focus/monitor/fund/add?code=000001&worth=-2&remark=测试
+# 示例：增加监控的基金：000001，涨幅为5，跌幅为10。（需要成本参数）
+http://127.0.0.1:8888/focus/monitor/fund/add?code=000001&cost=1.5&growth=5&lessen=10
+
+# 示例： 删除某个监控的基金配置：123、456
+http://127.0.0.1:8888/focus/monitor/fund/delete?ids=123,456
 ```
 
 ## <a id="schedule">定时推送</a>

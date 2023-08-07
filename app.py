@@ -10,7 +10,8 @@ import uvicorn
 from fastapi import FastAPI, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
 
-from module import process, focus
+from module.process import WorthProcess
+from module import focus
 from utils import utils
 import scheduler
 
@@ -46,7 +47,7 @@ class MoneyType(str, Enum):
     stock = 'stock'
 
 
-class WatchType(str, Enum):
+class FocusType(str, Enum):
     add = 'add'
     get = 'get'
     delete = 'delete'
@@ -58,23 +59,23 @@ def search(
         codes: Union[str, None] = Query(default=None),
 ):
     """查询操作"""
-    processor = process.Process(money_type, codes=codes)
+    worth = WorthProcess(money_type, codes=codes)
     return {
         'code': 200,
-        'data': processor.get_data(),
-        'message': f'【{processor.title}】{utils.asia_local_time()}\n\n{processor.get_message()}',
-        'fields': processor.get_fields()
+        'data': worth.get_data(),
+        'message': f'【{worth.title}】{utils.asia_local_time()}\n\n{worth.get_message()}',
+        'fields': worth.get_fields()
     }
 
 
-@app.get("/watch/{watch_type}")
-def do_watch(
-        watch_type: WatchType,
-        money_type: MoneyType = Query(alias='type'),
+@app.get("/focus/worth/{money_type}/{focus_type}")
+def focus_worth(
+        money_type: MoneyType,
+        focus_type: FocusType,
         codes: Union[str, None] = Query(default=None),
 ):
-    """关注操作"""
-    if watch_type in ('add', 'delete'):
+    """净值配置"""
+    if focus_type in ('add', 'delete'):
         assert codes, '缺少参数'
 
     resp = {'code': 200}
@@ -85,8 +86,50 @@ def do_watch(
         'get': foc.get,
         'delete': foc.delete,
     }
-    resp['data'], resp['msg'] = actions[watch_type](money_type,
+    resp['data'], resp['msg'] = actions[focus_type](money_type,
                                                     codes=[str(code) for code in codes.split(',')] if codes else None)
+
+    return resp
+
+
+@app.get("/focus/monitor/{money_type}/{focus_type}")
+def focus_monitor(
+        money_type: MoneyType,
+        focus_type: FocusType,
+        ids: Union[str, None] = Query(default=None),
+        code: Union[str, None] = Query(default=None),
+        worth: Union[int, float, None] = Query(default=None),
+        cost: Union[int, float, None] = Query(default=None),
+        growth: Union[int, float, None] = Query(default=None),
+        lessen: Union[int, float, None] = Query(default=None),
+        remark: Union[str, None] = Query(default=None),
+):
+    """监控配置"""
+    if focus_type == 'add':
+        assert code, '缺少参数 code'
+        assert worth or (cost and (growth or lessen)), '缺少参数'
+    elif focus_type == 'delete':
+        assert ids, '缺少参数 ids'
+
+    resp = {'code': 200}
+    foc = focus.Focus('monitor')
+
+    actions = {
+        'add': foc.add,
+        'get': foc.get,
+        'delete': foc.delete,
+    }
+    option = {
+        'code': code,
+        'worth': worth,
+        'cost': cost,
+        'growth': growth,
+        'lessen': lessen,
+        'remark': remark,
+    }
+    resp['data'], resp['msg'] = actions[focus_type](money_type,
+                                                    ids=[str(_id) for _id in ids.split(',')] if ids else None,
+                                                    option=option)
 
     return resp
 

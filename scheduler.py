@@ -14,28 +14,36 @@ import config
 # 创建一个异步调度器
 scheduler = AsyncIOScheduler()
 
-# 注册定时任务
-for index, cron in enumerate(config.FundCron):
-    if not cron:
-        continue
 
-    trigger = CronTrigger.from_crontab(cron, config.CronZone)
+def add_job():
+    jobs = [
+        {'cron': config.FundWorthCron, 'title': 'Fund Worth',
+         'args': ('fund',), 'kwargs': {'task_type': 'worth'}, },
+        {'cron': config.StockWorthCron, 'title': 'Stock Worth',
+         'args': ('stock',), 'kwargs': {'task_type': 'worth'}, },
 
-    scheduler.add_job(task.worth, args=('fund',), trigger=trigger, id=f'fund_{index}', name=f'Fund Task {index}')
+        {'cron': config.FundMonitorCron, 'title': 'Fund Monitor',
+         'args': ('fund',), 'kwargs': {'task_type': 'monitor'}, },
+        {'cron': config.StockMonitorCron, 'title': 'Stock Monitor',
+         'args': ('stock',), 'kwargs': {'task_type': 'monitor'}, },
+    ]
+    for job in jobs:
+        for index, cron in enumerate(job['cron']):
+            if not cron:
+                continue
 
-for index, cron in enumerate(config.StockCron):
-    if not cron:
-        continue
+            trigger = CronTrigger.from_crontab(cron, config.CronZone)
+            print(f'Add job: {job["title"]}, {cron}')
 
-    trigger = CronTrigger.from_crontab(cron, config.CronZone)
-
-    scheduler.add_job(task.worth, args=('stock',), trigger=trigger, id=f'stock_{index}',
-                      name=f'Stock Task {index}')
+            scheduler.add_job(task.send_money, args=job.get('args', None), kwargs=job.get('kwargs', None),
+                              trigger=trigger, id=f'{job["title"].replace(" ", "_").lower()}_{index}',
+                              name=f'{job["title"]} Task {index}')
 
 
 # 启动调度器
 async def start_scheduler():
     print(f'开启定时任务...')
+    add_job()
     scheduler.start()
 
 
