@@ -38,6 +38,9 @@
 ## <a id="command">命令行</a>
 
 * 入口文件：`command.py`
+* 功能：
+  * 估值查询
+  * 配置关注列表
 
 ### 估值查询
 
@@ -77,10 +80,14 @@ python command.py --command='delete' -t 'fund' -c '000001,000003'
 ## <a id="http">http请求</a>
 
 * 入口文件：`app.py`
+* 功能：
+  * 估值查询
+  * 配置关注列表
+  * 配置监控列表
 
 注：
 
-* 附带[定时推送](#schedule)功能
+* 附带 [定时推送](#schedule) 功能
 
 ### 启动
 
@@ -144,6 +151,9 @@ http://127.0.0.1:8888/focus/monitor/fund/delete?ids=123,456
 ## <a id="schedule">定时推送</a>
 
 * 入口文件：`scheduler.py`
+* 功能：
+  * 推送关注列表的估值
+  * 监控估值及涨跌幅
 
 ### 启动
 
@@ -155,5 +165,7 @@ http://127.0.0.1:8888/focus/monitor/fund/delete?ids=123,456
 * 配置文件：conf/config.yaml
     * FeiShuRobotUrl: [飞书群的机器人地址](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)
     * ChanKey: [Server酱服务的key](https://sct.ftqq.com/)
-    * FundCron: 基金的定时任务（[crontab格式](https://crontab.guru/#*_*_*_*_*)）
-    * StockCron: 股票的定时任务（crontab格式）
+    * FundWorthCron: 基金的定时任务（[crontab格式](https://crontab.guru/#*_*_*_*_*)）
+    * StockWorthCron: 股票的定时任务（crontab格式）
+    * FundMonitorCron: 股票的监控任务（crontab格式）
+    * StockMonitorCron: 股票的监控任务（crontab格式）
