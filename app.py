@@ -129,6 +129,7 @@ def focus_monitor(
     }
     resp['data'], resp['msg'] = actions[focus_type](money_type,
                                                     ids=[str(_id) for _id in ids.split(',')] if ids else None,
+                                                    code=code,
                                                     option=option)
 
     return resp

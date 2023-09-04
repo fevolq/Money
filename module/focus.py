@@ -135,10 +135,12 @@ class Monitor:
         return True, '添加成功'
 
     @bean.check_money_type(1)
-    def get(self, money_type, **kwargs) -> (list, str):
+    def get(self, money_type, *, code: str = None, **kwargs) -> (list, str):
         data = load(self.file_name)
 
         options = data.get(money_type, [])
+        if code:
+            options = list(filter(lambda item: item['code'] == code, options))
 
         msg = '暂无配置'
         if options:

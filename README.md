@@ -136,6 +136,7 @@ curl -X GET "http://127.0.0.1:8888/focus/monitor/${type}/${command}" --data "cod
 
 # 示例：查询监控的基金
 http://127.0.0.1:8888/focus/monitor/fund/get
+http://127.0.0.1:8888/focus/monitor/fund/get?code=000001
 
 # 示例：增加监控的基金：000001，阈值为2（估值大于等于2时）
 http://127.0.0.1:8888/focus/monitor/fund/add?code=000001&worth=2&remark=测试
