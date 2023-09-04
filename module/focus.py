@@ -7,7 +7,7 @@ import json
 import os
 import time
 
-from module import bean
+from module import bean, cache
 from utils import utils
 
 
@@ -183,15 +183,21 @@ folder_path = os.path.join(root_path, 'data')
 
 
 def load(file_name):
-    path = os.path.join(folder_path, file_name)
-    data = {}
-    if os.path.exists(path):
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+    data = cache.get(file_name)
+    if not data:
+        path = os.path.join(folder_path, file_name)
+        data = {}
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        cache.set(file_name, data)
+
     return data
 
 
 def save(data, file_name):
+    cache.delete(file_name)
+
     utils.mkdir(folder_path)
     path = os.path.join(folder_path, file_name)
     with open(path, 'w', encoding='utf-8') as f:

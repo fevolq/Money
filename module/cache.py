@@ -50,10 +50,11 @@ class Cache:
             if expire:
                 t = threading.Thread(target=self.__expire, args=(key, expire))
                 t.start()
+        return True
 
     def get(self, key: str):
         with self.__lock:
-            if key in self.__data and time.time() < self.__data[key]['expiration']:
+            if key in self.__data and time.time() < self.__data[key]['expire']:
                 return self.__data[key]['value']
             return None
 
@@ -61,11 +62,20 @@ class Cache:
         with self.__lock:
             return key in self.__data
 
-    def __expire(self, key: str, expire: int):
-        time.sleep(expire)
+    def __del(self, key):
         with self.__lock:
             if key in self.__data:
                 del self.__data[key]
+                return True
+
+        return False
+
+    def __expire(self, key: str, expire: int):
+        time.sleep(expire)
+        self.__del(key)
+
+    def delete(self, key: str):
+        return self.__del(key)
 
 
 cache = None
@@ -88,3 +98,7 @@ def get(key):
 
 def exist(key):
     return get_cache().exist(key)
+
+
+def delete(key):
+    return get_cache().delete(key)
