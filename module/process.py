@@ -103,7 +103,7 @@ class WorthProcess:
         return content
 
     def get_fields(self):
-        return self.datas_obj[0].get_fields() if self.datas_obj else {}
+        return self.datas_obj[0].get_fields() if self.datas_obj else []
 
 
 @bean.check_money_type(0)
@@ -151,7 +151,7 @@ class StockWorthData:
             result['rate'] = f'{"%.2f" % (rate * 100)}%'
 
         result['time'] = utils.time2str(result['time'])
-        point = 10 ** int(result['point'])
+        point = 10 ** int(result.pop('point'))
         for field in ('start_worth', 'standard_worth', 'current_worth'):
             result[field] = result[field] / point
 
@@ -169,8 +169,10 @@ class StockWorthData:
                f'{self.get_relate("time", key="label")}：{self._data["time"]}'
 
     def get_fields(self):
-        return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
-                field_conf.get('show', True)}
+        return [{'label': field_conf['label'], 'value': field} for field, field_conf in self.relate_fields.items() if
+                field_conf.get('show', True)]
+        # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
+        #         field_conf.get('show', True)}
 
 
 class FundWorthData:
@@ -221,8 +223,10 @@ class FundWorthData:
                f'{self.get_relate("time", key="label")}：{self._data["time"]}'
 
     def get_fields(self):
-        return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
-                field_conf.get('show', True)}
+        return [{'label': field_conf['label'], 'value': field} for field, field_conf in self.relate_fields.items() if
+                field_conf.get('show', True)]
+        # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
+        #         field_conf.get('show', True)}
 
 
 class MonitorProcess:

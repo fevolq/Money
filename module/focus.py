@@ -77,17 +77,17 @@ class Worth:
 
         record_codes = data.get(money_type, [])
 
-        hint_codes = []
+        hit_codes = []
         for code in codes:
             if str(code) in record_codes:
-                hint_codes.append(code)
+                hit_codes.append(code)
                 record_codes.remove(str(code))
-        if len(hint_codes) == 0:
+        if len(hit_codes) == 0:
             return False, 'id未匹配'
 
         data[money_type] = record_codes
         save(data, self.file_name)
-        return True, f'{",".join(hint_codes)}删除成功'
+        return True, f'{",".join(hit_codes)}删除成功'
 
 
 class Monitor:
@@ -158,23 +158,23 @@ class Monitor:
         data = load(self.file_name)
 
         options = data.get(money_type, [])
-        hint_index = []
-        hint_ids = []
+        hit_index = []
+        hit_ids = []
         for index, option in enumerate(options):
             if option['id'] in ids:
-                hint_index.append(index)
-                hint_ids.append(option['id'])
+                hit_index.append(index)
+                hit_ids.append(option['id'])
 
-        if len(hint_ids) == 0:
+        if len(hit_ids) == 0:
             return False, 'id未匹配'
 
-        for index in hint_index[::-1]:
+        for index in hit_index[::-1]:
             options.pop(index)
 
         data[money_type] = options
 
         save(data, self.file_name)
-        return True, f'{",".join(hint_ids)}删除成功'
+        return True, f'{",".join(hit_ids)}删除成功'
 
 
 # 项目的根路径
