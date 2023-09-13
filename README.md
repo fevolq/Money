@@ -15,7 +15,7 @@
    1. [x] 避免每日重复告警
 3. [x] 估值查询增加缓存层
 4. [x] 代码与名称的对应增加缓存层
-5. [ ] restful
+5. [x] restful
 6. [ ] 前端页面
 
 # 安装
@@ -92,6 +92,20 @@ python command.py --command='delete' -t 'fund' -c '000001,000003'
 注：
 
 * 附带 [定时推送](#schedule) 功能
+* api 接口均已增加对应 restful 接口（原接口暂时保留）。原接口去除掉 command 参数，更换对应请求方式与其他传参格式即可。
+    
+  如：
+    ```text
+    # 示例：增加监控的基金：000001，阈值为2（估值大于等于2时）
+  
+    # 原接口
+    http://127.0.0.1:8888/focus/monitor/fund/add?code=000001&worth=2&remark=测试
+
+    # restful 接口
+    curl -X POST "http://127.0.0.1:8888/focus/monitor/fund" --data "codes=${codes}"
+    -H "Content-Type: application/json"
+    -d '{"code": "000001", "worth": 2, "remark": "测试"}'
+    ```
 
 ### 启动
 
