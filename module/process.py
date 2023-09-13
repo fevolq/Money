@@ -55,14 +55,14 @@ class WorthProcess:
         codes = self._get_codes()
 
         def one(code) -> Union[dict, None]:
-            key = f'{self.money_type}.{code}'
+            key = f'worth.{self.money_type}.{code}'
             if config.WorthUseCache and cache.exist(key):
                 return cache.get(key)
 
             data, ok = self.api.fetch_current(code)
+            if config.WorthUseCache and ok:
+                cache.set(key, data, expire=WorthProcess.expire)
             if ok and data:
-                if config.WorthUseCache:
-                    cache.set(key, data, expire=WorthProcess.expire)
                 return data
             return None
 
@@ -534,4 +534,47 @@ def set_cache_expire_today(key, value):
     """
     next_date = utils.get_delay_date(delay=1)
     today_expire = utils.str2time(next_date, fmt="%Y-%m-%d") - utils.str2time()  # 当日剩余时间
-    cache.set(key, True, expire=int(today_expire) + 1)
+    cache.set(key, value, expire=int(today_expire) + 1)
+
+
+@bean.check_money_type(0)
+def get_relate_field(money_type, focus_type, field) -> Union[dict, None]:
+    relate = {
+        'fund.worth': FundWorthData.relate_fields,
+        'stock.worth': StockWorthData.relate_fields,
+        'fund.monitor': FundMonitorData.relate_fields,
+        'stock.monitor': StockMonitorData.relate_fields,
+    }
+    return relate.get(f'{money_type}.{focus_type}', {}).get(field, None)
+
+
+@bean.check_money_type(0)
+def get_codes_name(money_type, codes: Union[str, list]) -> dict:
+    """
+    获取codes的名称
+    :param money_type:
+    :param codes:
+    :return:
+    """
+    codes = codes if isinstance(codes, list) else [codes]
+
+    key = 'code_name'
+    if not cache.exist(key):
+        set_cache_expire_today(key, {})
+    codes_name = cache.get(key)
+
+    no_name_codes = [code.strip() for code in codes if f'{money_type}.{code}' not in codes_name]
+    if no_name_codes:
+        east_api = eastmoney.EastMoney(money_type)
+        codes_info_data = pools.execute_thread(lambda code: east_api.fetch_current(code),
+                                               [[(code,)] for code in no_name_codes])
+        name_field = get_relate_field(money_type, 'worth', 'name')
+
+        new_codes_name = {
+            f'{money_type}.{code}': codes_info_data[index][0][name_field['field']] if codes_info_data[index][
+                                                                                          0] and name_field else None
+            for index, code in enumerate(no_name_codes)
+        }
+        codes_name.update(new_codes_name)
+
+    return {code: codes_name[f'{money_type}.{code}'] for code in codes}
