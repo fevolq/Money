@@ -12,10 +12,13 @@ import numpy as np
 from api import eastmoney
 from utils import utils, pools
 from module import bean, focus, cache
+import config
 
 
 class WorthProcess:
     """净值"""
+
+    expire = 60  # 缓存时间
 
     @bean.check_money_type(1)
     def __init__(self, money_type, *, codes: Union[str, int, tuple, list, set] = None):
@@ -52,8 +55,14 @@ class WorthProcess:
         codes = self._get_codes()
 
         def one(code) -> Union[dict, None]:
+            key = f'{self.money_type}.{code}'
+            if config.WorthUseCache and cache.exist(key):
+                return cache.get(key)
+
             data, ok = self.api.fetch_current(code)
             if ok and data:
+                if config.WorthUseCache:
+                    cache.set(key, data, expire=WorthProcess.expire)
                 return data
             return None
 
@@ -398,7 +407,7 @@ class StockMonitorData:
                     continue
                 if int(bin(flag & flag_value), 2):
                     row_msg.append(f'{flag_conf["label"]}：{row[flag_conf["data_field"]]}')
-                    set_cache(key)
+                    set_cache_expire_today(key, True)
             if row_msg:
                 row_msg.insert(0,
                                f'【{row["option.id"]}】匹配\n'
@@ -505,7 +514,7 @@ class FundMonitorData:
                     continue
                 if int(bin(flag & flag_value), 2):
                     row_msg.append(f'{flag_conf["label"]}：{row[flag_conf["data_field"]]}')
-                    set_cache(key)
+                    set_cache_expire_today(key, True)
             if row_msg:
                 row_msg.insert(0,
                                f'【{row["option.id"]}】匹配\n'
@@ -516,7 +525,13 @@ class FundMonitorData:
         return all_msg
 
 
-def set_cache(key):
+def set_cache_expire_today(key, value):
+    """
+    设置当天失效的缓存
+    :param key:
+    :param value:
+    :return:
+    """
     next_date = utils.get_delay_date(delay=1)
     today_expire = utils.str2time(next_date, fmt="%Y-%m-%d") - utils.str2time()  # 当日剩余时间
     cache.set(key, True, expire=int(today_expire) + 1)

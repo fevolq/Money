@@ -8,6 +8,9 @@ import os
 import yaml
 
 # ---------------------------配置----------------------------------
+# 估值查询使用缓存
+WorthUseCache = True
+
 # 飞书机器人
 FeiShuRobotUrl = ''
 
