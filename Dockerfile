@@ -4,13 +4,15 @@ WORKDIR /data/money
 
 COPY requirements.txt /data/money/
 
-RUN pip install -r requirements.txt
+ARG LIBRARY="-i https://pypi.tuna.tsinghua.edu.cn/simple"
+
+RUN pip install -r requirements.txt ${LIBRARY}
 
 COPY . /data/money
 
 ARG PORT=8888
 
-ENV PORT=${PORT}
+ENV PORT=${PORT} WorthUseCache=true
 
 EXPOSE ${PORT}
 
