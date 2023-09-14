@@ -6,6 +6,7 @@
 import getopt
 import sys
 
+import config
 from module import focus, bean
 from module.process import WorthProcess
 from utils import utils
@@ -30,7 +31,7 @@ def command(cmd, *, money_type, codes: str = None):
 def search(money_type, *, codes: str = None):
     """查询操作"""
     worth = WorthProcess(money_type, codes=codes)
-    print(f'【{worth.title}】{utils.asia_local_time()}\n\n{worth.get_message()}')
+    print(f'【{worth.title}】{utils.now_time(tz=config.CronZone)}\n\n{worth.get_message()}')
 
 
 if __name__ == '__main__':

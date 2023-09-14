@@ -148,8 +148,8 @@ class StockWorthData:
         return cls.relate_fields[field][key] if field in cls.relate_fields else ''
 
     def _resolve_data(self, data):
-        data_time = utils.time2str(data[self.get_relate('time')], fmt='%Y-%m-%d')
-        if data_time != utils.asia_local_time(fmt='%Y-%m-%d'):
+        data_time = utils.time2str(data[self.get_relate('time')], fmt='%Y-%m-%d', tz=config.CronZone)
+        if data_time != utils.now_time(fmt='%Y-%m-%d', tz=config.CronZone):
             self._opening = False
 
         # 处理原始数据
@@ -159,7 +159,7 @@ class StockWorthData:
                 result['standard_worth'])
             result['rate'] = f'{"%.2f" % (rate * 100)}%'
 
-        result['time'] = utils.time2str(result['time'])
+        result['time'] = utils.time2str(result['time'], tz=config.CronZone)
         point = 10 ** int(result.pop('point'))
         for field in ('start_worth', 'standard_worth', 'current_worth'):
             result[field] = result[field] / point
@@ -208,7 +208,7 @@ class FundWorthData:
 
     def _resolve_data(self, data):
         data_time = data[self.get_relate('time')].split(' ')[0]
-        if data_time != utils.asia_local_time(fmt='%Y-%m-%d'):
+        if data_time != utils.now_time(fmt='%Y-%m-%d', tz=config.CronZone):
             self._opening = False
 
         # 处理原始数据
@@ -336,8 +336,8 @@ class StockMonitorData:
         return cls.relate_fields[field][key] if field in cls.relate_fields else ''
 
     def _resolve_data(self, data: dict):
-        data_time = utils.time2str(data[self.get_relate('time')], fmt='%Y-%m-%d')
-        if data_time != utils.asia_local_time(fmt='%Y-%m-%d'):
+        data_time = utils.time2str(data[self.get_relate('time')], fmt='%Y-%m-%d', tz=config.CronZone)
+        if data_time != utils.now_time(fmt='%Y-%m-%d', tz=config.CronZone):
             self._opening = False
 
         point = 10 ** int(data[self.get_relate('point')])
@@ -411,7 +411,8 @@ class StockMonitorData:
             if row_msg:
                 row_msg.insert(0,
                                f'【{row["option.id"]}】匹配\n'
-                               f'{self._initial_data[self.get_relate("name")]} [{self._initial_data[self.get_relate("code")]}]\n'
+                               f'{self._initial_data[self.get_relate("name")]}'
+                               f' [{self._initial_data[self.get_relate("code")]}]\n'
                                f'备注：{row["option.remark"]}')
                 all_msg.append('\n'.join(row_msg))
 
@@ -450,7 +451,7 @@ class FundMonitorData:
 
     def _resolve_data(self, data: dict):
         data_time = data[self.get_relate('time')].split(' ')[0]
-        if data_time != utils.asia_local_time(fmt='%Y-%m-%d'):
+        if data_time != utils.now_time(fmt='%Y-%m-%d', tz=config.CronZone):
             self._opening = False
 
         data_df = pd.DataFrame([data])
@@ -518,7 +519,8 @@ class FundMonitorData:
             if row_msg:
                 row_msg.insert(0,
                                f'【{row["option.id"]}】匹配\n'
-                               f'{self._initial_data[self.get_relate("name")]} [{self._initial_data[self.get_relate("code")]}]\n'
+                               f'{self._initial_data[self.get_relate("name")]}'
+                               f' [{self._initial_data[self.get_relate("code")]}]\n'
                                f'备注：{row["option.remark"]}')
                 all_msg.append('\n'.join(row_msg))
 
@@ -532,8 +534,9 @@ def set_cache_expire_today(key, value):
     :param value:
     :return:
     """
-    next_date = utils.get_delay_date(delay=1)
-    today_expire = utils.str2time(next_date, fmt="%Y-%m-%d") - utils.str2time()  # 当日剩余时间
+    next_date = utils.get_delay_date(delay=1, tz=config.CronZone)
+    today_expire = utils.str2time(next_date, fmt="%Y-%m-%d", tz=config.CronZone) - utils.str2time(
+        tz=config.CronZone)  # 当日剩余时间
     cache.set(key, value, expire=int(today_expire) + 1)
 
 
@@ -571,8 +574,8 @@ def get_codes_name(money_type, codes: Union[str, list]) -> dict:
         name_field = get_relate_field(money_type, 'worth', 'name')
 
         new_codes_name = {
-            f'{money_type}.{code}': codes_info_data[index][0][name_field['field']] if codes_info_data[index][
-                                                                                          0] and name_field else None
+            f'{money_type}.{code}': codes_info_data[index][0][name_field['field']]
+            if codes_info_data[index][0] and name_field else None
             for index, code in enumerate(no_name_codes)
         }
         codes_name.update(new_codes_name)

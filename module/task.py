@@ -21,7 +21,7 @@ async def send_money(money_type, *, task_type, choke=False):
     process_task = {'worth': WorthProcess, 'monitor': MonitorProcess}
     assert task_type in process_task, 'error task_type'
 
-    print(f'{utils.asia_local_time()}: Start send {task_type} —— {money_type}')
+    print(f'{utils.now_time(tz=config.CronZone)}: Start send {task_type} —— {money_type}')
 
     async def send(processor: process_task[task_type]):
         if processor and processor.datas:
@@ -29,7 +29,7 @@ async def send_money(money_type, *, task_type, choke=False):
             if not message:
                 return
             send_msg.feishu_robot_msg(config.FeiShuRobotUrl, content=message,
-                                      title=f'【{processor.title}】{utils.asia_local_time()}')
+                                      title=f'【{processor.title}】{utils.now_time(tz=config.CronZone)}')
             send_msg.chan_msg(processor.title, content=message, key=config.ChanKey)
 
     async def money():

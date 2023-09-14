@@ -223,8 +223,8 @@ class Fund:
             'fundCode': code,
             'pageIndex': page,
             'pageSize': page_size,
-            'startDate': start_date or utils.asia_local_time('%Y-%m-%d'),
-            'endDate': end_date or utils.asia_local_time('%Y-%m-%d'),
+            'startDate': start_date or utils.now_time(fmt='%Y-%m-%d'),
+            'endDate': end_date or utils.now_time(fmt='%Y-%m-%d'),
             '_': int(time.time() * 1000),
         }
         headers = self.headers
