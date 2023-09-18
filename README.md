@@ -2,11 +2,6 @@
 
 基于东方财富API实现的的估值查询及定时监控，可定时推送消息。
 
-包含功能：
-
-* [命令行交互](#command)
-* [网络请求查询](#http)
-* [定时推送](#schedule)
 
 # TODO
 
@@ -16,61 +11,55 @@
 3. [x] 估值查询增加缓存层
 4. [x] 代码与名称的对应增加缓存层
 5. [x] restful
-6. [ ] 前端页面
+6. [x] 前端页面
 
-# 安装
 
-1. 下载源码
-    ```shell
-    git clone https://github.com/fevolq/Money.git
-    ```
+# 架构
 
-2. 安装依赖
-    ```shell
-    pip install -r requirements.txt
-    ```
-
-3. 启动（详见[使用指南](#guidance)）
-
-# 内部设计
+## 内部设计
 
 1. 通过**指定类型** `(fund/stock)` 和**指定代码**，可直接查询估值等数据
-2. 通过预先关注，可快捷查询关注列表中的估值等数据
+2. 通过配置关注，可实现快捷查询
+3. 增加监控配置，可在指定时间自动查询数据，并推送达到要求的配置信息
 
-# <a id="guidance">使用指南</a>
+## 交互方式
+
+* [命令行交互](#command)
+* [网络请求查询](#http)
+* [定时推送](#schedule)
+
+
+# 使用指南
 
 ## <a id="command">命令行</a>
 
 * 入口文件：`command.py`
-* 功能：
+* 包含功能：
   * 估值查询
   * 配置关注列表
 
 ### 估值查询
+`python command.py -t <类型> -c <代码>`
 
-* 直接查询
-    ```shell
-  # python command.py -t <类型> -c <代码>
-  
-  # 示例：查询基金：000001、000003
-  python command.py -t 'fund' -c '000001,000003'
-    ```
-* 查询关注
-  ```shell
-  # python command.py -t <类型>
-    
-  # 示例：查询所关注的基金
-  python command.py -t 'fund'
-  ```
-  注：
-    * -t: 类型 `<type>`。`fund: 基金；stock: 股票`
-    * -c: 代码 `<code>`
+```shell
+# 查询指定代码
+## 示例：查询基金：000001、000003
+python command.py -t 'fund' -c '000001,000003'
 
-### （估值）关注配置
+# 查询关注
+## 示例：查询所关注的基金
+python command.py -t 'fund'
+```
 
-```bash
-python command.py --command=<操作类型> -t <类型> [-c <代码>]
+注：
+* -t: 类型 `<type>`。`fund: 基金；stock: 股票`
+* -c: 代码 `<code>`
 
+
+### 配置关注
+`python command.py --command=<操作类型> -t <类型> [-c <代码>]`
+
+```shell
 # 示例：查询关注的基金
 python command.py --command='get' -t 'fund'
 
@@ -86,8 +75,8 @@ python command.py --command='delete' -t 'fund' -c '000001,000003'
 * 入口文件：`app.py`
 * 功能：
   * 估值查询
-  * 配置关注列表
-  * 配置监控列表
+  * 配置关注
+  * 配置监控
 
 注：
 
@@ -111,13 +100,14 @@ python command.py --command='delete' -t 'fund' -c '000001,000003'
 
 * 直接启动：`python app.py`
 * 基于uvicorn：`uvicorn app:app`
-* 容器化：
-    * 构建镜像：`docker build -t <image_name> .`，也可使用以构建好的镜像：`docker pull infq/money`
+* 基于docker：
+    * 构建镜像：`docker build -t <image_name> .`（或 `docker pull infq/money`）
     * 启动容器：`docker run -d --name=<container_name> -p 8888:8888 <image_id>`
     * 可选参数：
         * `-e PORT=<port>`: 指定启动端口
         * `-v <本地路径>:/data/money/data`: 数据文件夹
         * `-v <本地路径>:/data/money/conf`: 配置文件夹
+* 基于docker-compose：`docker-compose up -d`
 
 ### 估值查询
 
@@ -179,12 +169,18 @@ http://127.0.0.1:8888/focus/monitor/fund/delete?ids=123,456
 * 直接启动：`python scheduler.py`
 * 依赖于app：通过开启 http 服务来启动。详见 [http请求](#http)
 
-### 其他
 
-* 配置文件：conf/config.yaml
-    * FeiShuRobotUrl: [飞书群的机器人地址](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)
-    * ChanKey: [Server酱服务的key](https://sct.ftqq.com/)
-    * FundWorthCron: 基金的定时任务（[crontab格式](https://crontab.guru/#*_*_*_*_*)）
-    * StockWorthCron: 股票的定时任务（crontab格式）
-    * FundMonitorCron: 股票的监控任务（crontab格式）
-    * StockMonitorCron: 股票的监控任务（crontab格式）
+# 其他
+## 前端界面
+本项目当前仅提供后端接口，需要前端界面可通过以下方式：
+1. docker-compose 方式启动 http 服务
+2. 使用提供的前端镜像：`docker pull infq/money-front`
+3. Code by youself
+
+## 配置文件
+* FeiShuRobotUrl: [飞书群的机器人地址](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)
+* ChanKey: [Server酱服务的key](https://sct.ftqq.com/)
+* FundWorthCron: 基金的定时任务（[crontab格式](https://crontab.guru/#*_*_*_*_*)）
+* StockWorthCron: 股票的定时任务（crontab格式）
+* FundMonitorCron: 股票的监控任务（crontab格式）
+* StockMonitorCron: 股票的监控任务（crontab格式）
