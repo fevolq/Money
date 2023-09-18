@@ -1,14 +1,14 @@
 FROM python:3.7-slim-buster
 
-WORKDIR /data/money
+WORKDIR /app/money
 
-COPY requirements.txt /data/money/
+COPY requirements.txt /app/money/
 
 ARG LIBRARY="-i https://pypi.tuna.tsinghua.edu.cn/simple"
 
 RUN pip install -r requirements.txt ${LIBRARY}
 
-COPY . /data/money
+COPY . /app/money
 
 ARG PORT=8888
 

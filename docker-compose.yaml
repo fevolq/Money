@@ -1,0 +1,40 @@
+version: '3'
+services:
+  money:
+    image: infq/money:latest
+    container_name: money
+    environment:
+      - PORT=8888
+      - WorthUseCache=true
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data:/app/money/data
+      - ./conf:/app/money/conf
+    networks:
+      - money
+    restart: always
+    command: [
+      "uvicorn",
+      "app:app",
+      "--host", "0.0.0.0",
+      "--port", "8888"
+    ]
+
+  money-frontend:
+    image: infq/money-front:latest
+    container_name: money-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - money
+    networks:
+      - money
+    environment:
+      - API=http://money:8888
+      - PORT=80
+      - DOMAIN=_
+    restart: always
+
+networks:
+  money:
