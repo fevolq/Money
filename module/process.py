@@ -153,7 +153,8 @@ class StockWorthData:
             self._opening = False
 
         # 处理原始数据
-        result = {field: data.get(field_conf['field'], '') for field, field_conf in self.relate_fields.items()}
+        result = {field: data.get(field_conf['field'], '')
+                  for field, field_conf in StockWorthData.relate_fields.items()}
         if result['standard_worth'] and result['current_worth']:
             rate = (float(result['current_worth']) - float(result['standard_worth'])) / float(
                 result['standard_worth'])
@@ -178,8 +179,9 @@ class StockWorthData:
                f'{self.get_relate("time", key="label")}：{self._data["time"]}'
 
     def get_fields(self):
-        return [{'label': field_conf['label'], 'value': field} for field, field_conf in self.relate_fields.items() if
-                field_conf.get('show', True)]
+        return [{'label': field_conf['label'], 'value': field}
+                for field, field_conf in StockWorthData.relate_fields.items()
+                if field_conf.get('show', True)]
         # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
         #         field_conf.get('show', True)}
 
@@ -212,7 +214,7 @@ class FundWorthData:
             self._opening = False
 
         # 处理原始数据
-        result = {field: data.get(field_conf['field'], '') for field, field_conf in self.relate_fields.items()}
+        result = {field: data.get(field_conf['field'], '') for field, field_conf in FundWorthData.relate_fields.items()}
         result['rate'] = f'{result["rate"]}%'
         for field in ('start_worth', 'current_worth'):
             if not result[field]:
@@ -232,8 +234,9 @@ class FundWorthData:
                f'{self.get_relate("time", key="label")}：{self._data["time"]}'
 
     def get_fields(self):
-        return [{'label': field_conf['label'], 'value': field} for field, field_conf in self.relate_fields.items() if
-                field_conf.get('show', True)]
+        return [{'label': field_conf['label'], 'value': field}
+                for field, field_conf in FundWorthData.relate_fields.items()
+                if field_conf.get('show', True)]
         # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
         #         field_conf.get('show', True)}
 
@@ -393,7 +396,7 @@ class StockMonitorData:
     def get_message(self) -> List[str]:
         flag_msgs = {
             2 ** field_conf['flag']: {'data_field': field, **field_conf}
-            for field, field_conf in self.relate_fields.items()
+            for field, field_conf in StockMonitorData.relate_fields.items()
             if 'flag' in field_conf
         }
 

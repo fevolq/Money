@@ -33,7 +33,6 @@ services:
     environment:
       - API=http://money:8888
       - PORT=80
-      - DOMAIN=_
     restart: always
 
 networks:

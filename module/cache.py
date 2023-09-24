@@ -40,7 +40,7 @@ class Cache:
         :param expire: 失效时间（秒）
         :return:
         """
-        with self.__lock:
+        with Cache.__lock:
             # TODO: set重复key时，停止原线程
             self.__data[key] = {
                 'value': value,
@@ -53,17 +53,17 @@ class Cache:
         return True
 
     def get(self, key: str):
-        with self.__lock:
+        with Cache.__lock:
             if key in self.__data and time.time() < self.__data[key]['expire']:
                 return self.__data[key]['value']
             return None
 
     def exist(self, key: str):
-        with self.__lock:
+        with Cache.__lock:
             return key in self.__data
 
     def __del(self, key):
-        with self.__lock:
+        with Cache.__lock:
             if key in self.__data:
                 del self.__data[key]
                 return True

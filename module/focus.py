@@ -50,19 +50,19 @@ class Worth:
     @bean.check_money_type(1)
     def add(self, money_type, *, codes: [str]) -> (bool, str):
         assert codes, '缺少有效代码'
-        data = load(self.file_name)
+        data = load(Worth.file_name)
 
         record_codes = data.get(money_type, [])
         sub = set([str(code) for code in codes]) - set(record_codes)  # 取不存在记录中的code
         record_codes.extend(list(filter(lambda code: code, sub)))
         data[money_type] = record_codes
 
-        save(data, self.file_name)
+        save(data, Worth.file_name)
         return True, f'{",".join(sub)}添加成功'
 
     @bean.check_money_type(1)
     def get(self, money_type, **kwargs) -> (list, str):
-        data = load(self.file_name)
+        data = load(Worth.file_name)
 
         codes = data.get(money_type, [])
 
@@ -73,7 +73,7 @@ class Worth:
     @bean.check_money_type(1)
     def delete(self, money_type, *, codes: [str]) -> (bool, str):
         assert codes, '缺少有效代码'
-        data = load(self.file_name)
+        data = load(Worth.file_name)
 
         record_codes = data.get(money_type, [])
 
@@ -86,7 +86,7 @@ class Worth:
             return False, 'id未匹配'
 
         data[money_type] = record_codes
-        save(data, self.file_name)
+        save(data, Worth.file_name)
         return True, f'{",".join(hit_codes)}删除成功'
 
 
@@ -101,7 +101,7 @@ class Monitor:
 
     @bean.check_money_type(1)
     def add(self, money_type, *, option: {}, **kwargs) -> (bool, str):
-        data = load(self.file_name)
+        data = load(Monitor.file_name)
 
         options = data.setdefault(money_type, [])
         tmp_option = {
@@ -131,12 +131,12 @@ class Monitor:
         })
         options.append(tmp_option)
 
-        save(data, self.file_name)
+        save(data, Monitor.file_name)
         return True, '添加成功'
 
     @bean.check_money_type(1)
     def get(self, money_type, *, code: str = None, **kwargs) -> (list, str):
-        data = load(self.file_name)
+        data = load(Monitor.file_name)
 
         options = data.get(money_type, [])
         if code:
@@ -155,7 +155,7 @@ class Monitor:
     @bean.check_money_type(1)
     def delete(self, money_type, *, ids: [str], **kwargs) -> (bool, str):
         assert ids, '缺少有效ID'
-        data = load(self.file_name)
+        data = load(Monitor.file_name)
 
         options = data.get(money_type, [])
         hit_index = []
@@ -173,7 +173,7 @@ class Monitor:
 
         data[money_type] = options
 
-        save(data, self.file_name)
+        save(data, Monitor.file_name)
         return True, f'{",".join(hit_ids)}删除成功'
 
 
