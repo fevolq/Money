@@ -29,55 +29,72 @@ class WorthProcess:
         """
         self.api = eastmoney.EastMoney(money_type)
         self.money_type = money_type
-        self.codes = codes if isinstance(codes, (tuple, list, set, type(None))) else [str(code) for code in
-                                                                                      str(codes).split(',') if code]
+        self.codes = codes if isinstance(codes, (tuple, list, set, type(None))) \
+            else [str(code) for code in str(codes).split(',') if code]
         self.title = {
             'stock': '股票',
             'fund': '基金',
         }[self.money_type]
         self.foc = focus.Focus('worth')
 
-        self.datas = self._load()
+        self.datas: List[dict] = self._load()
 
         # 对原始数据进行展示处理
         self.datas_obj = [get_worth_data_obj(self.money_type)(data) for data in self.datas]
 
-    def _get_codes(self):
+    def _get_options(self):
+        options = []
+
+        record_options, _ = self.foc.get(self.money_type)
         if not self.codes:
-            self.codes, _ = self.foc.get(self.money_type)
+            options = record_options
+        else:
+            record_codes = {option['code']: option for option in record_options}
+            for code in self.codes:
+                option = record_codes.get(code, {'code': code})
+                options.append(option)
 
-            assert self.codes, '无关注项，请添加关注后再来。'
+        assert options, '无关注项，请添加关注后再来。'
 
-        return self.codes
+        return options
 
-    def _load(self) -> list:
+    def _load(self) -> [dict]:
         """获取最新原始数据"""
-        codes = self._get_codes()
+        options = self._get_options()
 
         def one(code) -> Union[dict, None]:
             key = f'worth.{self.money_type}.{code}'
             if config.WorthUseCache and cache.exist(key):
                 return cache.get(key)
 
-            data, ok = self.api.fetch_current(code)
+            res, ok = self.api.fetch_current(code)
             if config.WorthUseCache and ok:
-                cache.set(key, data, expire=WorthProcess.expire)
-            if ok and data:
-                return data
+                cache.set(key, res, expire=WorthProcess.expire)
+            if ok and res:
+                return res
             return None
 
         # # 单线程
-        # datas = []
-        # for _code in codes:
-        #     _data = one(_code)
-        #     if not _data:
+        # result = []
+        # for option in options:
+        #     res = one(option['code'])
+        #     if not res:
         #         continue
-        #     datas.append(_data)
+        #     result.append(res)
 
         # 多线程
-        args_list = [[(_code,)] for _code in codes]
+        args_list = [[(option['code'],)] for option in options]
         result = pools.execute_thread(one, args_list)
-        datas = list(filter(lambda _data: _data, result))
+
+        datas = []
+        for index, option in enumerate(options):
+            data = result[index]
+            if not data:
+                continue
+            datas.append({
+                'option': option,
+                'data': data
+            })
         return datas
 
     def get_data(self, is_open=False) -> List:
@@ -134,10 +151,15 @@ class StockWorthData:
         'time': {'field': 'f86', 'label': '数据时间'},
         'point': {'field': 'f59', 'label': '进制', 'show': False},
     }
+    option_fields = {
+        'cost': {'field': 'cost', 'label': '成本'},
+        'profit': {'field': 'profit', 'label': '盈利'},
+        'regression': {'field': 'regression', 'label': '成本回归'},
+    }
 
-    def __init__(self, data):
+    def __init__(self, data: dict):
         self._opening = True  # 是否开市
-        self._data = self._resolve_data(data)
+        self._data = self._resolve_data(data['data'], data['option'])
 
     @property
     def opening(self):
@@ -147,7 +169,7 @@ class StockWorthData:
     def get_relate(cls, field, *, key='field'):
         return cls.relate_fields[field][key] if field in cls.relate_fields else ''
 
-    def _resolve_data(self, data):
+    def _resolve_data(self, data, option):
         data_time = utils.time2str(data[self.get_relate('time')], fmt='%Y-%m-%d', tz=config.CronZone)
         if data_time != utils.now_time(fmt='%Y-%m-%d', tz=config.CronZone):
             self._opening = False
@@ -165,6 +187,19 @@ class StockWorthData:
         for field in ('start_worth', 'standard_worth', 'current_worth'):
             result[field] = result[field] / point
 
+        result.update({field: '' for field, field_conf in StockWorthData.option_fields.items()})
+        if option.get(StockWorthData.option_fields['cost']['field'], None):
+            # 配置中包含了成本
+            current_worth = result['current_worth']
+            cost = float(option['cost'])
+            result['cost'] = cost
+
+            profit = (current_worth - cost) / cost
+            result['profit'] = f'{"%.2f" % (profit * 100)}%'
+
+            regression = (cost / current_worth) - 1
+            result['regression'] = f'{"%.2f" % (regression * 100)}%'
+
         return result
 
     def get_data(self):
@@ -178,9 +213,11 @@ class StockWorthData:
                f'{self.get_relate("rate", key="label")}：{self._data["rate"]}\n' \
                f'{self.get_relate("time", key="label")}：{self._data["time"]}'
 
-    def get_fields(self):
+    @classmethod
+    def get_fields(cls):
+        fields = {**cls.relate_fields, **cls.option_fields}
         return [{'label': field_conf['label'], 'value': field}
-                for field, field_conf in StockWorthData.relate_fields.items()
+                for field, field_conf in fields.items()
                 if field_conf.get('show', True)]
         # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
         #         field_conf.get('show', True)}
@@ -195,10 +232,15 @@ class FundWorthData:
         'rate': {'field': 'gszzl', 'label': '涨跌幅'},
         'time': {'field': 'gztime', 'label': '数据时间'},
     }
+    option_fields = {
+        'cost': {'field': 'cost', 'label': '成本'},
+        'profit': {'field': 'profit', 'label': '盈利'},
+        'regression': {'field': 'regression', 'label': '成本回归'},
+    }
 
-    def __init__(self, data):
+    def __init__(self, data: dict):
         self._opening = True  # 是否开市
-        self._data = self._resolve_data(data)
+        self._data = self._resolve_data(data['data'], data['option'])
 
     @property
     def opening(self):
@@ -208,7 +250,7 @@ class FundWorthData:
     def get_relate(cls, field, *, key='field'):
         return cls.relate_fields[field][key] if field in cls.relate_fields else ''
 
-    def _resolve_data(self, data):
+    def _resolve_data(self, data, option):
         data_time = data[self.get_relate('time')].split(' ')[0]
         if data_time != utils.now_time(fmt='%Y-%m-%d', tz=config.CronZone):
             self._opening = False
@@ -221,6 +263,18 @@ class FundWorthData:
                 continue
             result[field] = float(result[field])
 
+        result.update({field: '' for field, field_conf in FundWorthData.option_fields.items()})
+        if option.get(FundWorthData.option_fields['cost']['field'], None):
+            # 配置中包含了成本
+            current_worth = result['current_worth']
+            cost = float(option['cost'])
+            result['cost'] = cost
+
+            profit = (current_worth - cost) / cost
+            result['profit'] = f'{"%.2f" % (profit * 100)}%'
+
+            regression = (cost / current_worth) - 1
+            result['regression'] = f'{"%.2f" % (regression * 100)}%'
         return result
 
     def get_data(self):
@@ -233,12 +287,12 @@ class FundWorthData:
                f'{self.get_relate("rate", key="label")}：{self._data["rate"]}\n' \
                f'{self.get_relate("time", key="label")}：{self._data["time"]}'
 
-    def get_fields(self):
+    @classmethod
+    def get_fields(cls):
+        fields = {**cls.relate_fields, **cls.option_fields}
         return [{'label': field_conf['label'], 'value': field}
-                for field, field_conf in FundWorthData.relate_fields.items()
+                for field, field_conf in fields.items()
                 if field_conf.get('show', True)]
-        # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
-        #         field_conf.get('show', True)}
 
 
 class MonitorProcess:
@@ -560,7 +614,7 @@ def get_codes_name(money_type, codes: Union[str, list]) -> dict:
     获取codes的名称
     :param money_type:
     :param codes:
-    :return:
+    :return: {code: name}
     """
     codes = codes if isinstance(codes, list) else [codes]
 

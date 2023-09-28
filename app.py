@@ -5,7 +5,7 @@
 
 import copy
 from enum import Enum
-from typing import Union
+from typing import Union, List
 
 import uvicorn
 from fastapi import FastAPI, Query
@@ -48,14 +48,14 @@ class MoneyType(str, Enum):
     stock = 'stock'
 
 
-class FocusType(str, Enum):
-    add = 'add'
-    get = 'get'
-    delete = 'delete'
+# 估值关注的单个配置
+class FocusWorthOption(BaseModel):
+    code: str
+    cost: Union[int, float, None] = Query(default=None, gt=0)
 
 
-class Codes(BaseModel):
-    codes: str
+class FocusWorthOptions(BaseModel):
+    options: List[FocusWorthOption]
 
 
 class MonitorOption(BaseModel):
@@ -82,57 +82,32 @@ def search(
     return {
         'code': 200,
         'data': worth.get_data(),
-        'fields': worth.get_fields()
+        'fields': worth.get_fields(),
         # 'message': f'【{worth.title}】{utils.asia_local_time()}\n\n{worth.get_message()}',
     }
-
-
-# 估值配置（弃用）
-@app.get("/focus/worth/{money_type}/{focus_type}", deprecated=True)
-def focus_worth(
-        money_type: MoneyType,
-        focus_type: FocusType,
-
-        codes: Union[str, None] = Query(default=None),
-):
-    """净值配置"""
-    if focus_type in ('add', 'delete'):
-        assert codes, '缺少参数'
-
-    resp = {'code': 200}
-    foc = focus.Focus('worth')
-
-    actions = {
-        'add': foc.add,
-        'get': foc.get,
-        'delete': foc.delete,
-    }
-    resp['data'], resp['msg'] = actions[focus_type](money_type,
-                                                    codes=[str(code) for code in codes.split(',')] if codes else None)
-
-    return resp
 
 
 # 估值配置查询
 @app.get("/focus/worth/{money_type}")
 def focus_worth_get(money_type: MoneyType):
-    codes = focus.Focus('worth').get(money_type)[0]
+    options = focus.Focus('worth').get(money_type)[0]
+    codes = [option['code'] for option in options]
 
     names = process.get_codes_name(money_type, codes)
 
+    for option in options:
+        option['name'] = names.get(option['code'], '')
+
     return {
         'code': 200,
-        'data': [{
-            'code': code,
-            'name': names[code]
-        } for code in codes],
+        'data': options,
     }
 
 
 # 估值配置添加
 @app.post("/focus/worth/{money_type}")
-def focus_worth_add(money_type: MoneyType, codes: Codes):
-    res = focus.Focus('worth').add(money_type, codes=[str(code).strip() for code in codes.codes.split(',')])
+def focus_worth_add(money_type: MoneyType, data: FocusWorthOptions):
+    res = focus.Focus('worth').add(money_type, options=[option.model_dump() for option in data.options])
 
     return {
         'code': 200,
@@ -143,8 +118,8 @@ def focus_worth_add(money_type: MoneyType, codes: Codes):
 
 # 估值配置删除
 @app.delete("/focus/worth/{money_type}")
-def focus_worth_del(money_type: MoneyType, codes: Codes):
-    res = focus.Focus('worth').delete(money_type, codes=[str(code).strip() for code in codes.codes.split(',')])
+def focus_worth_del(money_type: MoneyType, data: FocusWorthOptions):
+    res = focus.Focus('worth').delete(money_type, options=[option.model_dump() for option in data.options])
 
     return {
         'code': 200,
@@ -153,58 +128,13 @@ def focus_worth_del(money_type: MoneyType, codes: Codes):
     }
 
 
-# 监控配置
-@app.get("/focus/monitor/{money_type}/{focus_type}", deprecated=True)
-def focus_monitor(
-        money_type: MoneyType,
-        focus_type: FocusType,
-
-        ids: Union[str, None] = Query(default=None),
-        code: Union[str, None] = Query(default=None),
-        worth: Union[int, float, None] = Query(default=None),
-        cost: Union[int, float, None] = Query(default=None),
-        growth: Union[int, float, None] = Query(default=None),
-        lessen: Union[int, float, None] = Query(default=None),
-        remark: Union[str, None] = Query(default=None),
-):
-    if focus_type == 'add':
-        assert code, '缺少参数 code'
-        assert worth or (cost and (growth or lessen)), '缺少参数'
-    elif focus_type == 'delete':
-        assert ids, '缺少参数 ids'
-
-    resp = {'code': 200}
-    foc = focus.Focus('monitor')
-
-    actions = {
-        'add': foc.add,
-        'get': foc.get,
-        'delete': foc.delete,
-    }
-    option = {
-        'code': code,
-        'worth': worth,
-        'cost': cost,
-        'growth': growth,
-        'lessen': lessen,
-        'remark': remark,
-    }
-    resp['data'], resp['msg'] = actions[focus_type](money_type,
-                                                    ids=[str(_id) for _id in ids.split(',')] if ids else None,
-                                                    code=code,
-                                                    option=option)
-
-    return resp
-
-
 # 监控配置查询
 @app.get("/focus/monitor/{money_type}")
 def focus_monitor_get(
         money_type: MoneyType,
         code: Union[str, None] = Query(default=None),
 ):
-    res = focus.Focus('monitor').get(money_type, code=code)
-    data = copy.deepcopy(res[0])  # 进行拷贝，否则一旦更改，会将缓存数据一并更改
+    data = focus.Focus('monitor').get(money_type, code=code)[0]
 
     codes = [row['code'] for row in data]
     names = process.get_codes_name(money_type, codes)

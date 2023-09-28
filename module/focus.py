@@ -3,6 +3,7 @@
 # CreateTime: 2023/8/4 14:24
 # FileName: 配置关注
 
+import copy
 import json
 import os
 import time
@@ -48,44 +49,55 @@ class Worth:
         return '净值'
 
     @bean.check_money_type(1)
-    def add(self, money_type, *, codes: [str]) -> (bool, str):
-        assert codes, '缺少有效代码'
+    def add(self, money_type, *, options: [dict]) -> (bool, str):
+        assert options, '缺少有效配置'
         data = load(Worth.file_name)
 
-        record_codes = data.get(money_type, [])
-        sub = set([str(code) for code in codes]) - set(record_codes)  # 取不存在记录中的code
-        record_codes.extend(list(filter(lambda code: code, sub)))
-        data[money_type] = record_codes
+        record_options = data.get(money_type, [])
+        record_codes = [option['code'] for option in record_options]
+
+        # sub_options = list(filter(lambda option: option['code'] not in record_codes, options))  # 取不存在记录中的code
+        sub_options = []
+        for option in options:
+            if option['code'] in record_codes:
+                continue
+            sub_options.append(option)
+            record_codes.append(option['code'])  # 避免options中有重复的code
+
+        record_options.extend(sub_options)
+        data[money_type] = record_options
 
         save(data, Worth.file_name)
-        return True, f'{",".join(sub)}添加成功'
+        return True, f'{",".join([option["code"] for option in sub_options])}添加成功'
 
     @bean.check_money_type(1)
     def get(self, money_type, **kwargs) -> (list, str):
         data = load(Worth.file_name)
 
-        codes = data.get(money_type, [])
+        record_options = copy.deepcopy(data.get(money_type, []))
 
-        msg = f'已关注: {",".join(codes)}' if codes else '暂无关注'
+        msg = f'已关注: {",".join([option["code"] for option in record_options])}' if record_options else '暂无关注'
 
-        return codes, msg
+        return record_options, msg
 
     @bean.check_money_type(1)
-    def delete(self, money_type, *, codes: [str]) -> (bool, str):
-        assert codes, '缺少有效代码'
+    def delete(self, money_type, *, options: [dict]) -> (bool, str):
+        assert options, '缺少有效代码'
         data = load(Worth.file_name)
 
-        record_codes = data.get(money_type, [])
+        record_options = data.get(money_type, [])
+        record_codes = [option['code'] for option in record_options]
 
         hit_codes = []
-        for code in codes:
-            if str(code) in record_codes:
-                hit_codes.append(code)
-                record_codes.remove(str(code))
+        for option in options:
+            if option['code'] in record_codes:
+                hit_codes.append(option['code'])
         if len(hit_codes) == 0:
             return False, 'id未匹配'
+        else:
+            record_options = list(filter(lambda option: option['code'] not in hit_codes, record_options))
 
-        data[money_type] = record_codes
+        data[money_type] = record_options
         save(data, Worth.file_name)
         return True, f'{",".join(hit_codes)}删除成功'
 
@@ -138,7 +150,7 @@ class Monitor:
     def get(self, money_type, *, code: str = None, **kwargs) -> (list, str):
         data = load(Monitor.file_name)
 
-        options = data.get(money_type, [])
+        options = copy.deepcopy(data.get(money_type, []))
         if code:
             options = list(filter(lambda item: item['code'] == code, options))
 

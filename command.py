@@ -23,7 +23,8 @@ def command(cmd, *, money_type, codes: str = None):
     }
     assert cmd.lower() in actions, 'command参数错误'
 
-    result, msg = actions[cmd.lower()](money_type, codes=[str(code) for code in codes.split(',')] if codes else [])
+    result, msg = actions[cmd.lower()](money_type, options=[
+        {'code': str(code).strip() for code in codes.split(',')}] if codes else [])
     print(msg)
 
 
