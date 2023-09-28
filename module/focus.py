@@ -155,10 +155,14 @@ class Monitor:
         if not record:
             record = self.get_default_option()
 
-        record['cost'] = float(option['cost']) if option.get('cost') is not None else record['cost']
-        record['worth'] = float(option['worth']) if option.get('worth') is not None else record['worth']
-        record['growth'] = abs(float(option['growth'])) if option.get('growth') is not None else record['growth']
-        record['lessen'] = abs(float(option['lessen'])) if option.get('lessen') is not None else record['lessen']
+        record['cost'] = float(option['cost']) if 'cost' in option and option['cost'] is not None \
+            else option.get('cost', record['cost'])
+        record['worth'] = float(option['worth']) if 'worth' in option and option['worth'] is not None \
+            else option.get('worth', record['worth'])
+        record['growth'] = abs(float(option['growth'])) if 'growth' in option and option['growth'] is not None \
+            else option.get('growth', record['growth'])
+        record['lessen'] = abs(float(option['lessen'])) if 'lessen' in option and option['lessen'] is not None \
+            else option.get('lessen', record['lessen'])
         record['remark'] = option.get('remark', record['remark'])
         assert record['worth'] or (record['cost'] and (record['growth'] or option['lessen'])), '缺少有效值'
 

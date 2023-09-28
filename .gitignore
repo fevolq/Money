@@ -6,10 +6,10 @@ venv/
 
 build/
 dist/
+data/
+demo/
 
 logs/
 *.log
 local_config.py
 demo.py
-demo
-data/*.json
