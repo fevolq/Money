@@ -3,7 +3,6 @@
 # CreateTime: 2023/7/28 15:27
 # FileName: 基于FastAPI的app
 
-import copy
 from enum import Enum
 from typing import Union, List
 
@@ -58,19 +57,6 @@ class FocusWorthOptions(BaseModel):
     options: List[FocusWorthOption]
 
 
-class MonitorOption(BaseModel):
-    code: str
-    remark: Union[str, None] = None
-    worth: Union[int, float, None] = None
-    cost: Union[int, float, None] = None
-    growth: Union[int, float, None] = None
-    lessen: Union[int, float, None] = None
-
-
-class MonitorID(BaseModel):
-    ids: str
-
-
 # 估值查询
 @app.get("/search/{money_type}")
 def search(
@@ -116,6 +102,18 @@ def focus_worth_add(money_type: MoneyType, data: FocusWorthOptions):
     }
 
 
+# 估值配置更新
+@app.put("/focus/worth/{money_type}")
+def focus_worth_update(money_type: MoneyType, data: FocusWorthOption):
+    res = focus.Focus('worth').update(money_type, option=data.model_dump())
+
+    return {
+        'code': 200,
+        'data': res[0],
+        'msg': res[1]
+    }
+
+
 # 估值配置删除
 @app.delete("/focus/worth/{money_type}")
 def focus_worth_del(money_type: MoneyType, data: FocusWorthOptions):
@@ -126,6 +124,24 @@ def focus_worth_del(money_type: MoneyType, data: FocusWorthOptions):
         'data': res[0],
         'msg': res[1]
     }
+
+
+class MonitorOption(BaseModel):
+    code: str
+    remark: Union[str, None] = None
+    worth: Union[int, float, None] = None
+    cost: Union[int, float, None] = None
+    growth: Union[int, float, None] = None
+    lessen: Union[int, float, None] = None
+
+
+class MonitorUpdate(BaseModel):
+    id: str
+    option: MonitorOption
+
+
+class MonitorDelete(BaseModel):
+    ids: str
 
 
 # 监控配置查询
@@ -155,7 +171,24 @@ def focus_monitor_add(
         option: MonitorOption,
 ):
     assert option.worth or (option.cost and (option.growth or option.lessen)), '缺少参数'
-    data, msg = focus.Focus('monitor').add(money_type, option=option.__dict__)
+    data, msg = focus.Focus('monitor').add(money_type, option=option.model_dump())
+    return {
+        'code': 200,
+        'data': data,
+        'msg': msg,
+    }
+
+
+# 监控配置更新
+@app.put("/focus/monitor/{money_type}")
+def focus_monitor_update(
+        money_type: MoneyType,
+        data: MonitorUpdate,
+):
+    option = data.option
+    hash_id = data.id
+    assert option.worth or (option.cost and (option.growth or option.lessen)), '缺少参数'
+    data, msg = focus.Focus('monitor').update(money_type, hash_id=hash_id, option=option.model_dump())
     return {
         'code': 200,
         'data': data,
@@ -167,12 +200,12 @@ def focus_monitor_add(
 @app.delete("/focus/monitor/{money_type}")
 def focus_monitor_del(
         money_type: MoneyType,
-        ids: MonitorID,
+        data: MonitorDelete,
 ):
-    data, msg = focus.Focus('monitor').delete(money_type, ids=[str(id_).strip() for id_ in ids.ids.split(',')])
+    res, msg = focus.Focus('monitor').delete(money_type, ids=[str(id_).strip() for id_ in data.ids.split(',')])
     return {
         'code': 200,
-        'data': data,
+        'data': res,
         'msg': msg,
     }
 

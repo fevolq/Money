@@ -35,6 +35,9 @@ class Focus:
     def get(self, *args, **kwargs):
         return self.action('get', *args, **kwargs)
 
+    def update(self, *args, **kwargs):
+        return self.action('update', *args, **kwargs)
+
     def delete(self, *args, **kwargs):
         return self.action('delete', *args, **kwargs)
 
@@ -65,8 +68,8 @@ class Worth:
             record_codes.append(option['code'])  # 避免options中有重复的code
 
         record_options.extend(sub_options)
-        data[money_type] = record_options
 
+        data[money_type] = record_options
         save(data, Worth.file_name)
         return True, f'{",".join([option["code"] for option in sub_options])}添加成功'
 
@@ -79,6 +82,24 @@ class Worth:
         msg = f'已关注: {",".join([option["code"] for option in record_options])}' if record_options else '暂无关注'
 
         return record_options, msg
+
+    @bean.check_money_type(1)
+    def update(self, money_type, *, option: dict) -> (bool, str):
+        assert option, '缺少有效配置'
+        data = load(Worth.file_name)
+
+        record_options = data.get(money_type, [])
+        hit = False
+        for record in record_options:
+            if record['code'] != option['code']:
+                continue
+            record['cost'] = option.get('cost', None)
+            hit = True
+            break
+
+        data[money_type] = record_options
+        save(data, Worth.file_name)
+        return True if hit else False, f'{option["code"]} 已更改成功'
 
     @bean.check_money_type(1)
     def delete(self, money_type, *, options: [dict]) -> (bool, str):
@@ -111,38 +132,52 @@ class Monitor:
     def __repr__(self):
         return '监控'
 
+    @classmethod
+    def get_default_option(cls):
+        return {
+            "id": None,  # 唯一ID
+            "code": None,  # 代码
+            "remark": None,  # 备注
+            "worth": None,  # 净值阈值
+            "cost": None,  # 成本
+            "growth": None,  # 成本增长率
+            "lessen": None,  # 成本减少率
+        }
+
+    def _update_option(self, money_type, option, *, record=None):
+        def gen_hash_id() -> str:
+            ids = [item['id'] for item in load(Monitor.file_name).setdefault(money_type, [])]
+            hash_id = utils.gen_hash(str(time.time()))[:6]
+            if hash_id in ids:
+                return gen_hash_id()
+            return hash_id
+
+        if not record:
+            record = self.get_default_option()
+
+        record['cost'] = float(option['cost']) if option.get('cost') is not None else record['cost']
+        record['worth'] = float(option['worth']) if option.get('worth') is not None else record['worth']
+        record['growth'] = abs(float(option['growth'])) if option.get('growth') is not None else record['growth']
+        record['lessen'] = abs(float(option['lessen'])) if option.get('lessen') is not None else record['lessen']
+        record['remark'] = option.get('remark', record['remark'])
+        assert record['worth'] or (record['cost'] and (record['growth'] or option['lessen'])), '缺少有效值'
+
+        # 初始化的情况
+        if record['id'] is None:
+            record['id'] = gen_hash_id()
+        if record['code'] is None:
+            record['code'] = option['code']
+
+        return record
+
     @bean.check_money_type(1)
     def add(self, money_type, *, option: {}, **kwargs) -> (bool, str):
         data = load(Monitor.file_name)
 
-        options = data.setdefault(money_type, [])
-        tmp_option = {
-            'cost': float(option['cost']) if option.get('cost') is not None else None,  # 成本
-            'worth': float(option['worth']) if option.get('worth') is not None else None,  # 净值
-            'growth': abs(float(option['growth'])) if option.get('growth') is not None else None,  # 成本增长率
-            'lessen': abs(float(option['lessen'])) if option.get('lessen') is not None else None,  # 成本减少率
-        }
-        if any([tmp_option['growth'], tmp_option['lessen']]):
-            assert tmp_option['cost'], '缺少成本'
-        if len(list(filter(lambda k: tmp_option[k] is not None, tmp_option))) == 0:
-            return False, '缺少有效值'
+        record_options = copy.deepcopy(data.get(money_type, []))
+        record_options.append(self._update_option(money_type, option))
 
-        ids = [_option['id'] for _option in options]
-
-        def gen_hash_id() -> str:
-            hashed = utils.gen_hash(str(time.time()))
-            _id = hashed[:6]
-            if _id in ids:
-                return gen_hash_id()
-            return _id
-
-        tmp_option.update({
-            'id': gen_hash_id(),
-            'code': option['code'],
-            'remark': option.get('remark', None),
-        })
-        options.append(tmp_option)
-
+        data[money_type] = record_options
         save(data, Monitor.file_name)
         return True, '添加成功'
 
@@ -165,14 +200,34 @@ class Monitor:
         return options, msg
 
     @bean.check_money_type(1)
+    def update(self, money_type, *, hash_id, option: {}, **kwargs) -> (bool, str):
+        data = load(Monitor.file_name)
+
+        record_options = data.setdefault(money_type, [])
+        hit = False
+        for record in record_options:
+            if record['id'] != hash_id:
+                continue
+            self._update_option(money_type, option, record=record)
+            hit = True
+            break
+
+        if not hit:
+            return False, 'id未匹配'
+
+        data[money_type] = record_options
+        save(data, Monitor.file_name)
+        return True, f'{hash_id} 更新成功'
+
+    @bean.check_money_type(1)
     def delete(self, money_type, *, ids: [str], **kwargs) -> (bool, str):
         assert ids, '缺少有效ID'
         data = load(Monitor.file_name)
 
-        options = data.get(money_type, [])
+        record_options = data.get(money_type, [])
         hit_index = []
         hit_ids = []
-        for index, option in enumerate(options):
+        for index, option in enumerate(record_options):
             if option['id'] in ids:
                 hit_index.append(index)
                 hit_ids.append(option['id'])
@@ -181,9 +236,9 @@ class Monitor:
             return False, 'id未匹配'
 
         for index in hit_index[::-1]:
-            options.pop(index)
+            record_options.pop(index)
 
-        data[money_type] = options
+        data[money_type] = record_options
 
         save(data, Monitor.file_name)
         return True, f'{",".join(hit_ids)}删除成功'
