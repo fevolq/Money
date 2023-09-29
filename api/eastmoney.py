@@ -4,6 +4,7 @@
 # FileName: 东方财富api
 
 import json
+from json import JSONDecodeError
 import time
 from typing import List, Union
 
@@ -197,7 +198,10 @@ class Fund:
             return None, False
         data = resp.text
         data = data.lstrip('jsonpgz(').rstrip(');')
-        data = json.loads(data)
+        try:
+            data = json.loads(data)
+        except JSONDecodeError:
+            return {}, False
         return data, True
 
     def fetch_fund_history(self, code, start_date=None, end_date=None, page=1, page_size=20):
