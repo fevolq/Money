@@ -97,7 +97,7 @@ class WorthProcess:
             })
         return datas
 
-    def get_data(self, is_open=False) -> List:
+    def get_data(self, is_open=False, **options) -> List:
         """
         获取数据
         :param is_open: 是否过滤掉今日未开市的数据
@@ -108,10 +108,10 @@ class WorthProcess:
         for data_obj in self.datas_obj:
             if is_open and not data_obj.opening:
                 continue
-            result.append(data_obj.get_data())
+            result.append(data_obj.get_data(**options))
         return result
 
-    def get_message(self, is_open=False) -> str:
+    def get_message(self, is_open=False, **kwargs) -> List:
         """
         获取信息
         :param is_open: 是否过滤掉今日未开市的数据
@@ -122,11 +122,9 @@ class WorthProcess:
         for data_obj in self.datas_obj:
             if is_open and not data_obj.opening:
                 continue
-            all_msg.append(data_obj.get_message())
+            all_msg.append(data_obj.get_message(**kwargs))
 
-        content = '\n\n'.join(all_msg)
-
-        return content
+        return all_msg
 
     def get_fields(self):
         return self.datas_obj[0].get_fields() if self.datas_obj else []
@@ -205,7 +203,7 @@ class StockWorthData:
     def get_data(self):
         return self._data
 
-    def get_message(self):
+    def get_message(self, **kwargs):
         return f'{self._data["name"]} [{self._data["code"]}]\n' \
                f'{self.get_relate("standard_worth", key="label")}：{self._data["standard_worth"]}\n' \
                f'{self.get_relate("start_worth", key="label")}：{self._data["start_worth"]}\n' \
@@ -280,7 +278,7 @@ class FundWorthData:
     def get_data(self):
         return self._data
 
-    def get_message(self):
+    def get_message(self, **kwargs):
         return f'{self._data["name"]} [{self._data["code"]}]\n' \
                f'{self.get_relate("start_worth", key="label")}：{self._data["start_worth"]}\n' \
                f'{self.get_relate("current_worth", key="label")}：{self._data["current_worth"]}\n' \
@@ -342,16 +340,14 @@ class MonitorProcess:
 
         return datas
 
-    def get_message(self, is_open=False):
+    def get_message(self, is_open=False, **kwargs) -> List:
         all_msg = []
         for data_obj in self.datas_obj:
             if is_open and not data_obj.opening:
                 continue
-            all_msg.extend(data_obj.get_message())
+            all_msg.extend(data_obj.get_message(**kwargs))
 
-        content = '\n\n'.join(all_msg)
-
-        return content
+        return all_msg
 
 
 @bean.check_money_type(0)
@@ -447,7 +443,12 @@ class StockMonitorData:
         df['flag'] = df.apply(solve, axis=1)
         return json.loads(df.to_json(orient='records'))
 
-    def get_message(self) -> List[str]:
+    def get_message(self, to_cache: bool = True) -> List[str]:
+        """
+
+        :param to_cache: 是否缓存已发送的信息
+        :return:
+        """
         flag_msgs = {
             2 ** field_conf['flag']: {'data_field': field, **field_conf}
             for field, field_conf in StockMonitorData.relate_fields.items()
@@ -460,11 +461,12 @@ class StockMonitorData:
             flag = int(row['flag'], 2)
             for flag_value, flag_conf in flag_msgs.items():
                 key = f'monitor:{row["option.id"]}:{flag_value}'
-                if cache.exist(key):
+                if to_cache and cache.exist(key):
                     continue
                 if int(bin(flag & flag_value), 2):
                     row_msg.append(f'{flag_conf["label"]}：{row[flag_conf["data_field"]]}')
-                    set_cache_expire_today(key, True)
+                    if to_cache:
+                        bean.set_cache_expire_today(key, True)
             if row_msg:
                 row_msg.insert(0,
                                f'【{row["option.id"]}】匹配\n'
@@ -555,7 +557,12 @@ class FundMonitorData:
         df['flag'] = df.apply(solve, axis=1)
         return json.loads(df.to_json(orient='records'))
 
-    def get_message(self) -> List[str]:
+    def get_message(self, to_cache: bool = True) -> List[str]:
+        """
+
+        :param to_cache: 是否缓存已发送的信息
+        :return:
+        """
         flag_msgs = {
             2 ** field_conf['flag']: {'data_field': field, **field_conf}
             for field, field_conf in self.relate_fields.items()
@@ -568,11 +575,12 @@ class FundMonitorData:
             flag = int(row['flag'], 2)
             for flag_value, flag_conf in flag_msgs.items():
                 key = f'monitor:{row["option.id"]}:{flag_value}'
-                if cache.exist(key):
+                if to_cache and cache.exist(key):
                     continue
                 if int(bin(flag & flag_value), 2):
                     row_msg.append(f'{flag_conf["label"]}：{row[flag_conf["data_field"]]}')
-                    set_cache_expire_today(key, True)
+                    if to_cache:
+                        bean.set_cache_expire_today(key, True)
             if row_msg:
                 row_msg.insert(0,
                                f'【{row["option.id"]}】匹配\n'
@@ -582,19 +590,6 @@ class FundMonitorData:
                 all_msg.append('\n'.join(row_msg))
 
         return all_msg
-
-
-def set_cache_expire_today(key, value):
-    """
-    设置当天失效的缓存
-    :param key:
-    :param value:
-    :return:
-    """
-    next_date = utils.get_delay_date(delay=1, tz=config.CronZone)
-    today_expire = utils.str2time(next_date, fmt="%Y-%m-%d", tz=config.CronZone) - utils.str2time(
-        tz=config.CronZone)  # 当日剩余时间
-    cache.set(key, value, expire=int(today_expire) + 1)
 
 
 @bean.check_money_type(0)
@@ -620,7 +615,7 @@ def get_codes_name(money_type, codes: Union[str, list]) -> dict:
 
     key = 'code_name'
     if not cache.exist(key):
-        set_cache_expire_today(key, {})
+        bean.set_cache_expire_today(key, {})
     codes_name = cache.get(key)
 
     no_name_codes = [code.strip() for code in codes if f'{money_type}.{code}' not in codes_name]

@@ -35,7 +35,27 @@ def add_job():
             trigger = CronTrigger.from_crontab(cron, config.CronZone)
             print(f'Add job: {job["title"]}, {cron}')
 
-            scheduler.add_job(task.send_money, args=job.get('args', None), kwargs=job.get('kwargs', None),
+            scheduler.add_job(task.send_money, args=job['args'], kwargs=job['kwargs'],
+                              trigger=trigger, id=f'{job["title"].replace(" ", "_").lower()}_{index}',
+                              name=f'{job["title"]} Task {index}')
+
+
+def add_broadcast_job():
+    jobs = [
+        {'cron': config.BroadMonitorCron, 'title': 'Broad Fund Monitor',
+         'args': ('fund',), 'kwargs': {'task_type': 'monitor'}, },
+        {'cron': config.BroadMonitorCron, 'title': 'Broad Stock Monitor',
+         'args': ('stock',), 'kwargs': {'task_type': 'monitor'}, },
+    ]
+    for job in jobs:
+        for index, cron in enumerate(job['cron']):
+            if not cron:
+                continue
+
+            trigger = CronTrigger.from_crontab(cron, config.CronZone)
+            print(f'Add job: {job["title"]}, {cron}')
+
+            scheduler.add_job(task.send_money, args=job['args'], kwargs={**job['kwargs'], 'is_broad': True},
                               trigger=trigger, id=f'{job["title"].replace(" ", "_").lower()}_{index}',
                               name=f'{job["title"]} Task {index}')
 
@@ -44,6 +64,7 @@ def add_job():
 async def start_scheduler():
     print(f'开启定时任务...')
     add_job()
+    add_broadcast_job()
     scheduler.start()
 
 

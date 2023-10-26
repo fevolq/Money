@@ -2,18 +2,19 @@
 # python3.7
 # CreateTime: 2023/7/28 15:27
 # FileName: 基于FastAPI的app
-
+import logging
 from enum import Enum
 from typing import Union, List
 
 import uvicorn
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 
 from module.process import WorthProcess
 from module import focus, process
 import scheduler
+from sockets import Client
 
 app = FastAPI()
 
@@ -208,6 +209,20 @@ def focus_monitor_del(
         'data': res,
         'msg': msg,
     }
+
+
+@app.websocket("/ws")
+async def ws(websocket: WebSocket):
+    await websocket.accept()
+    client = await Client.register(websocket)
+    try:
+        while True:
+            await client.run()
+    except WebSocketDisconnect:
+        await Client.unregister(client)
+    except Exception as e:
+        logging.error(e)
+        await Client.unregister(client)
 
 
 if __name__ == '__main__':

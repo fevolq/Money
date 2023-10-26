@@ -39,6 +39,11 @@ FundMonitorCron = [
 StockMonitorCron = [
 
 ]
+
+# 监控任务广播
+BroadMonitorCron = [
+
+]
 # ----------------------------------------------------------------
 
 

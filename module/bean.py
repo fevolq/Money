@@ -6,6 +6,10 @@
 import sys
 from functools import wraps
 
+import config
+from module import cache
+from utils import utils
+
 
 def check_money_type(index=None):
     """
@@ -43,3 +47,16 @@ def sys_exit(func):
         return result
 
     return wrapper
+
+
+def set_cache_expire_today(key, value):
+    """
+    设置当天失效的缓存
+    :param key:
+    :param value:
+    :return:
+    """
+    next_date = utils.get_delay_date(delay=1, tz=config.CronZone)
+    today_expire = utils.str2time(next_date, fmt="%Y-%m-%d", tz=config.CronZone) - utils.str2time(
+        tz=config.CronZone)  # 当日剩余时间
+    cache.set(key, value, expire=int(today_expire) + 1)
