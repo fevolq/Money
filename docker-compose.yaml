@@ -31,7 +31,7 @@ services:
     networks:
       - money
     environment:
-      - API=http://money:8888
+      - SERVER=http://money:8888
       - PORT=80
     restart: always
 

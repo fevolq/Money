@@ -8,9 +8,10 @@ build/
 dist/
 data/
 demo/
-
 logs/
+
 *.log
 local_config.py
-demo.py
+docker-compose.yaml
 README.md
+demo.py
