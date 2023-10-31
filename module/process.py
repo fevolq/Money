@@ -192,11 +192,17 @@ class StockWorthData:
             cost = float(option['cost'])
             result['cost'] = cost
 
-            profit = (current_worth - cost) / cost
-            result['profit'] = f'{"%.2f" % (profit * 100)}%'
+            if cost == 0.0:
+                result['profit'] = 'inf'
+            else:
+                profit = (current_worth - cost) / cost
+                result['profit'] = f'{"%.2f" % (profit * 100)}%'
 
-            regression = (cost / current_worth) - 1
-            result['regression'] = f'{"%.2f" % (regression * 100)}%'
+            if current_worth == 0.0:
+                result['regression'] = 'inf'
+            else:
+                regression = (cost / current_worth) - 1
+                result['regression'] = f'{"%.2f" % (regression * 100)}%'
 
         return result
 
