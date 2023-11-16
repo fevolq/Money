@@ -4,6 +4,7 @@
 # FileName: 调度任务
 
 import asyncio
+import logging
 
 from module.process import WorthProcess, MonitorProcess
 import sockets
@@ -25,7 +26,7 @@ async def send_money(money_type, *, task_type, choke=False, is_broad=False):
 
     if is_broad and not sockets.clients:  # 无客户端连接时，跳过广播的定时任务
         return
-    print(f'{utils.now_time(tz=config.CronZone)}: Start send {task_type} —— {money_type}')
+    logging.info(f'{utils.now_time(tz=config.CronZone)}: Start send {task_type} —— {money_type}')
 
     async def send(processor: process_task[task_type]):
         if processor and processor.datas:

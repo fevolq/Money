@@ -5,6 +5,7 @@
 
 import copy
 import json
+import logging
 import os
 import time
 
@@ -71,7 +72,10 @@ class Worth:
 
         data[money_type] = record_options
         save(data, Worth.file_name)
-        return True, f'{",".join([option["code"] for option in sub_options])}添加成功'
+
+        info = f'{",".join([option["code"] for option in sub_options])}添加成功'
+        logging.info(info)
+        return True, info
 
     @bean.check_money_type(1)
     def get(self, money_type, **kwargs) -> (list, str):
@@ -99,7 +103,10 @@ class Worth:
 
         data[money_type] = record_options
         save(data, Worth.file_name)
-        return True if hit else False, f'{option["code"]} 已更改成功'
+
+        info = f'{option["code"]} 已更改成功'
+        logging.info(info)
+        return True if hit else False, info
 
     @bean.check_money_type(1)
     def delete(self, money_type, *, options: [dict]) -> (bool, str):
@@ -120,7 +127,10 @@ class Worth:
 
         data[money_type] = record_options
         save(data, Worth.file_name)
-        return True, f'{",".join(hit_codes)}删除成功'
+
+        info = f'{",".join(hit_codes)}删除成功'
+        logging.info(info)
+        return True, info
 
 
 class Monitor:
@@ -145,7 +155,7 @@ class Monitor:
         }
 
     def _update_option(self, money_type, option, *, record=None):
-        def gen_hash_id() -> str:
+        def gen_hash_id():
             ids = [item['id'] for item in load(Monitor.file_name).setdefault(money_type, [])]
             hash_id = utils.gen_hash(str(time.time()))[:6]
             if hash_id in ids:
@@ -221,7 +231,10 @@ class Monitor:
 
         data[money_type] = record_options
         save(data, Monitor.file_name)
-        return True, f'{hash_id} 更新成功'
+
+        info = f'{hash_id} 更新成功'
+        logging.info(info)
+        return True, info
 
     @bean.check_money_type(1)
     def delete(self, money_type, *, ids: [str], **kwargs) -> (bool, str):
@@ -245,7 +258,10 @@ class Monitor:
         data[money_type] = record_options
 
         save(data, Monitor.file_name)
-        return True, f'{",".join(hit_ids)}删除成功'
+
+        info = f'{",".join(hit_ids)}删除成功'
+        logging.info(info)
+        return True, info
 
 
 # 项目的根路径

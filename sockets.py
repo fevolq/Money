@@ -10,7 +10,6 @@ import time
 from module import cache, bean
 from utils import utils
 
-
 clients = {}
 
 
@@ -28,10 +27,12 @@ class Client:
     async def register(cls, websocket):
         client = Client(websocket)
         await broadcast({'type': 'user', 'value': len(clients)})
+        logging.info(f'register ws: {client.key}')
         return client
 
     @classmethod
     async def unregister(cls, client):
+        logging.info(f'unregister ws: {client.key}')
         if clients.get(client.key):
             clients.pop(client.key)
         await broadcast({'type': 'user', 'value': len(clients)})
@@ -45,12 +46,12 @@ class Client:
         """
         if key:
             key = f'client:{self.key}:{key}'
-            if cache.exist(key):
+            if cache.exist(key):  # 避免给同一用户发送重复的通知
                 return
             else:
                 bean.set_cache_expire_today(key, True)
 
-        logging.info(f'{self.key} send: {data}')
+        logging.info(f'ws[{self.key}] send: {data}')
         await self.websocket.send_json(data)
 
     async def run(self):

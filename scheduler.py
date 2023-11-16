@@ -4,6 +4,7 @@
 # FileName: 定时推送
 
 import asyncio
+import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -33,7 +34,7 @@ def add_job():
                 continue
 
             trigger = CronTrigger.from_crontab(cron, config.CronZone)
-            print(f'Add job: {job["title"]}, {cron}')
+            logging.info(f'Add job: {job["title"]}, {cron}')
 
             scheduler.add_job(task.send_money, args=job['args'], kwargs=job['kwargs'],
                               trigger=trigger, id=f'{job["title"].replace(" ", "_").lower()}_{index}',
@@ -53,7 +54,7 @@ def add_broadcast_job():
                 continue
 
             trigger = CronTrigger.from_crontab(cron, config.CronZone)
-            print(f'Add job: {job["title"]}, {cron}')
+            logging.info(f'Add job: {job["title"]}, {cron}')
 
             scheduler.add_job(task.send_money, args=job['args'], kwargs={**job['kwargs'], 'is_broad': True},
                               trigger=trigger, id=f'{job["title"].replace(" ", "_").lower()}_{index}',
@@ -62,7 +63,7 @@ def add_broadcast_job():
 
 # 启动调度器
 async def start_scheduler():
-    print(f'开启定时任务...')
+    logging.info('开启定时任务...')
     add_job()
     add_broadcast_job()
     scheduler.start()
@@ -70,7 +71,7 @@ async def start_scheduler():
 
 # 停止调度器
 async def stop_scheduler():
-    print(f'终止定时任务...')
+    logging.info('终止定时任务...')
     scheduler.shutdown()
 
 
@@ -85,4 +86,7 @@ async def run_scheduler():
 
 
 if __name__ == "__main__":
+    from utils import log_util
+
+    log_util.init_logging('', datefmt='%Y-%m-%d %H:%M:%S')
     asyncio.run(run_scheduler())

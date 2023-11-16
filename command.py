@@ -4,6 +4,7 @@
 # FileName: 命令行交互
 
 import getopt
+import logging
 import sys
 
 import config
@@ -25,17 +26,21 @@ def command(cmd, *, money_type, codes: str = None):
 
     result, msg = actions[cmd.lower()](money_type, options=[
         {'code': str(code).strip() for code in codes.split(',')}] if codes else [])
-    print(msg)
+    logging.info(msg)
 
 
 @bean.sys_exit
 def search(money_type, *, codes: str = None):
     """查询操作"""
     worth = WorthProcess(money_type, codes=codes)
-    print(f'【{worth.title}】{utils.now_time(tz=config.CronZone)}\n\n{worth.get_message()}')
+    logging.info(f'【{worth.title}】{utils.now_time(tz=config.CronZone)}\n\n{worth.get_message()}')
 
 
 if __name__ == '__main__':
+    from utils import log_util
+
+    log_util.init_logging('', datefmt='%Y-%m-%d %H:%M:%S')
+
     test_money_type = ''
     test_codes = ''
     # test_codes = '600010'

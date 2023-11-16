@@ -2,6 +2,7 @@
 # python3.7
 # CreateTime: 2023/7/28 15:27
 # FileName: 基于FastAPI的app
+
 import logging
 from enum import Enum
 from typing import Union, List
@@ -15,7 +16,10 @@ from module.process import WorthProcess
 from module import focus, process
 import scheduler
 from sockets import Client
+from utils import log_util
 
+
+log_util.init_logging('', datefmt='%Y-%m-%d %H:%M:%S', stream_level='INFO')
 app = FastAPI()
 
 

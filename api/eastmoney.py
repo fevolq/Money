@@ -4,6 +4,7 @@
 # FileName: 东方财富api
 
 import json
+import logging
 from json import JSONDecodeError
 import time
 from typing import List, Union
@@ -134,7 +135,7 @@ class Stock:
             'pn': page,
             'fs': ','.join(all_fs)
         }
-        print(f'开始第{page}页')
+        logging.info(f'股票查询，开始第{page}页')
         resp = requests.get(url, params=params, headers=self.headers)
         if resp.status_code != 200:
             return None, False

@@ -4,6 +4,7 @@
 # FileName:
 
 import json
+import logging
 from typing import Union, List
 
 import pandas as pd
@@ -27,6 +28,7 @@ class WorthProcess:
         :param money_type: 类型
         :param codes: 代码
         """
+        logging.info(f'估值查询：{money_type}, {codes}')
         self.api = eastmoney.EastMoney(money_type)
         self.money_type = money_type
         self.codes = codes if isinstance(codes, (tuple, list, set, type(None))) \
@@ -39,7 +41,7 @@ class WorthProcess:
 
         self.datas: List[dict] = self._load()
 
-        # 对原始数据进行展示处理
+        # 对原始数据进行处理
         self.datas_obj = [get_worth_data_obj(self.money_type)(data) for data in self.datas]
 
     def _get_options(self):
@@ -67,6 +69,7 @@ class WorthProcess:
             if config.WorthUseCache and cache.exist(key):
                 return cache.get(key)
 
+            logging.info(f'开始查询估值：{self.money_type} [{code}]')
             res, ok = self.api.fetch_current(code)
             if config.WorthUseCache and ok:
                 cache.set(key, res, expire=WorthProcess.expire)
@@ -223,8 +226,6 @@ class StockWorthData:
         return [{'label': field_conf['label'], 'value': field}
                 for field, field_conf in fields.items()
                 if field_conf.get('show', True)]
-        # return {field: field_conf['label'] for field, field_conf in self.relate_fields.items() if
-        #         field_conf.get('show', True)}
 
 
 class FundWorthData:
@@ -318,7 +319,7 @@ class MonitorProcess:
 
         self.options, _ = self.foc.get(self.money_type)
         self.datas = self._load()
-        # 对原始数据进行展示处理
+        # 对原始数据进行处理
         self.datas_obj = [get_monitor_data_obj(self.money_type)(data, self.options) for data in self.datas]
 
     def _load(self) -> list:
@@ -326,6 +327,7 @@ class MonitorProcess:
         codes = set([option['code'] for option in self.options])
 
         def one(code) -> Union[dict, None]:
+            logging.info(f'开始查询估值：{self.money_type} [{code}]')
             data, ok = self.api.fetch_current(code)
             if ok and data:
                 return data
@@ -624,17 +626,17 @@ def get_codes_name(money_type, codes: Union[str, list]) -> dict:
         bean.set_cache_expire_today(key, {})
     codes_name = cache.get(key)
 
-    no_name_codes = [code.strip() for code in codes if f'{money_type}.{code}' not in codes_name]
-    if no_name_codes:
+    miss_name_codes = [code.strip() for code in codes if f'{money_type}.{code}' not in codes_name]
+    if miss_name_codes:
         east_api = eastmoney.EastMoney(money_type)
         codes_info_data = pools.execute_thread(lambda code: east_api.fetch_current(code),
-                                               [[(code,)] for code in no_name_codes])
+                                               [[(code,)] for code in miss_name_codes])
         name_field = get_relate_field(money_type, 'worth', 'name')
 
         new_codes_name = {
             f'{money_type}.{code}': codes_info_data[index][0][name_field['field']]
             if codes_info_data[index][0] and name_field else None
-            for index, code in enumerate(no_name_codes)
+            for index, code in enumerate(miss_name_codes)
         }
         codes_name.update(new_codes_name)
 

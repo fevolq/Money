@@ -47,7 +47,7 @@ class Cache:
                 'expire': time.time() + expire if expire else float('inf')
             }
 
-            if expire:
+            if expire:  # 另起一个删除缓存的线程
                 t = threading.Thread(target=self.__expire, args=(key, expire))
                 t.start()
         return True
