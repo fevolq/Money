@@ -36,8 +36,8 @@ class EastMoney:
             'fund': Fund,
         }[self.mode]()
 
-    def action(self, func: str, **kwargs):
-        return getattr(self.adapter, func)(**kwargs)
+    def action(self, func: str, *args, **kwargs):
+        return getattr(self.adapter, func)(*args, **kwargs)
 
     def fetch_current(self, code, **kwargs):
         """
@@ -46,11 +46,16 @@ class EastMoney:
         :param kwargs:
         :return:
         """
-        relation = {
-            'stock': 'fetch_stock_current_detail',
-            'fund': 'fetch_fund_current_worth',
-        }
-        return self.action(relation[self.mode], code=code, **kwargs)
+        return self.adapter.fetch_current(code, **kwargs)
+
+    def fetch_history(self, code, **kwargs):
+        """
+        获取指定代码的历史数据
+        :param code:
+        :param kwargs:
+        :return:
+        """
+        return self.adapter.fetch_history(code, **kwargs)
 
 
 class Stock:
@@ -74,47 +79,29 @@ class Stock:
         'f86': 'timestamp',  # 时间戳（分钟）
     }
 
+    history_fields = {
+        'f51': 'date',  # 日期
+        'f52': 'start',  # 开盘
+        'f53': 'end',  # 收盘
+        'f54': 'highest',  # 最高
+        'f55': 'lowest',  # 最低
+        'f56': 'f56',  # 成交量
+        'f57': 'f57',  # 成交额
+        'f58': 'amplitude',  # 振幅
+        'f59': 'rate',  # 涨跌幅
+        'f60': 'f60',  # 涨跌额
+        'f61': 'f61',  # 换手率
+    }
+
     def __init__(self):
         self.headers = {
             'user-agent': fetch.get_user_agent(),
             'Content-Type': 'application/json; charset=utf-8',
         }
 
-    def get_quote_id(self, code):
-        url = 'https://searchadapter.eastmoney.com/api/suggest/get'
-        params = {
-            'type': 14,
-            'input': code,
-        }
-        resp = requests.get(url, params=params, headers=self.headers)
-        if resp.status_code != 200:
-            return ''
-
-        data = resp.json()['QuotationCodeTable']['Data']
-        return data[0]['QuoteID'] if data else ''
-
-    def fetch_stock_current_detail(self, code, fields: [] = None) -> (Union[dict, None], bool):
+    def fetch_all(self, fields: [] = None, page=1, result: [] = None) -> (Union[List, None], bool):
         """
-        获取指定股票的最新详情
-        :param code: 股票代码
-        :param fields: 字段
-        :return:
-        """
-        url = f'https://push2.eastmoney.com/api/qt/stock/get'
-        params = {
-            'secid': self.get_quote_id(code),
-            'fields': ','.join(fields or self.detail_fields.keys())
-        }
-        resp = requests.get(url, params=params, headers=self.headers)
-        if resp.status_code != 200:
-            return None, False
-        data = resp.json()['data']
-
-        return data, True
-
-    def fetch_stocks(self, fields: [] = None, page=1, result: [] = None) -> (Union[List, None], bool):
-        """
-        获取所有股票
+        股票列表
         :return:
         """
         default_fields = {
@@ -144,7 +131,7 @@ class Stock:
 
         result.extend(list(data['diff'].values()))
         if data['total'] > page * page_size:
-            return self.fetch_stocks(fields=fields, page=page + 1, result=result)
+            return self.fetch_all(fields=fields, page=page + 1, result=result)
 
         df = pd.DataFrame(result)
         for field in default_fields:
@@ -153,6 +140,77 @@ class Stock:
                 df.drop(field, axis=1, inplace=True)
 
         return json.loads(df.to_json(orient='records'))
+
+    def get_quote_id(self, code):
+        url = 'https://searchadapter.eastmoney.com/api/suggest/get'
+        params = {
+            'type': 14,
+            'input': code,
+        }
+        resp = requests.get(url, params=params, headers=self.headers)
+        if resp.status_code != 200:
+            return ''
+
+        data = resp.json()['QuotationCodeTable']['Data']
+        return data[0]['QuoteID'] if data else ''
+
+    def fetch_current(self, code, *, fields: [] = None) -> (Union[dict, None], bool):
+        """
+        获取指定股票的最新详情
+        :param code: 股票代码
+        :param fields: 字段
+        :return:
+        """
+        fields = fields or list(self.detail_fields.keys())
+
+        url = f'https://push2.eastmoney.com/api/qt/stock/get'
+        params = {
+            'secid': self.get_quote_id(code),
+            'fields': ','.join(fields)
+        }
+        resp = requests.get(url, params=params, headers=self.headers)
+        if resp.status_code != 200:
+            return None, False
+        data = resp.json()['data']
+
+        return data, True
+
+    def fetch_history(self, code, *, fields: [] = None, limit: int = 1, reload=True) -> (Union[dict, None], bool):
+        """
+        获取指定股票的历史数据
+        :param code: 股票代码
+        :param fields: 字段
+        :param limit: 数据量
+        :param reload: 预先重载数据（增加数据与字段的对应）
+        :return:
+        """
+        fields = fields or list(self.history_fields.keys())
+
+        url = f'https://push2his.eastmoney.com/api/qt/stock/kline/get'
+        params = {
+            'secid': self.get_quote_id(code),
+            'fields1': ','.join(['f1', 'f3']),  # f1: code代码, f2: market, f3: name名称, f4: decimal精度, f5: dktotal数据量
+            'fields2': ','.join(fields),
+            'lmt': limit,
+
+            'klt': 101,  # k线度量
+            'end': 29991010,
+            'fqt': 0,
+
+        }
+        resp = requests.get(url, params=params, headers=self.headers)
+        if resp.status_code != 200:
+            return None, False
+        data = resp.json()['data']
+
+        if reload:
+            lines = []
+            for line in data['klines']:
+                line = line.split(',')
+                lines.append({fields[index]: line[index] for index in range(len(fields))})
+            data['klines'] = lines
+
+        return data, True
 
 
 class Fund:
@@ -164,7 +222,16 @@ class Fund:
         'gszzl': 'min_limit',  # 涨跌幅
         'fundcode': 'code',  # 代码
         'name': 'name',  # 名称
-        'gztime': 'timestamp',  # 时间戳（分钟）
+        'gztime': 'timestamp',  # 当前数据时间（时间戳（分钟））
+    }
+
+    history_fields = {
+        'FSRQ': 'data',  # 净值日期
+        'DWJZ': 'worth',  # 单位净值
+        'LJJZ': 'total',  # 累计净值
+        'JZZZL': 'rate',  # 日增长率
+        'SGZT': 'SGZT',  # 申购状态
+        'SHZT': 'SHZT'  # 赎回状态
     }
 
     def __init__(self):
@@ -173,7 +240,7 @@ class Fund:
             'Content-Type': 'application/json; charset=utf-8',
         }
 
-    def fetch_all_fund(self) -> (Union[List, None], bool):
+    def fetch_all(self) -> (Union[List, None], bool):
         """
         基金列表
         :return:
@@ -187,11 +254,11 @@ class Fund:
         data = json.loads(data)
         return data, True
 
-    def fetch_fund_current_worth(self, code) -> (dict, bool):
+    def fetch_current(self, code) -> (Union[dict, None], bool):
         """
         指定时刻的基金净值等
         :param code: 基金代码
-        :return: {'fundcode': 基金代码, 'name': 基金名称, 'dwjz': 当日初始值, 'gsz': 当前值（收盘前）, 'gszzl': 涨跌幅, 'gztime': 当前数据时间}
+        :return:
         """
         url = f'http://fundgz.1234567.com.cn/js/{code}.js'
         resp = requests.get(url, headers=self.headers)
@@ -205,17 +272,10 @@ class Fund:
             return {}, False
         return data, True
 
-    def fetch_fund_history(self, code, start_date=None, end_date=None, page=1, page_size=20):
+    def fetch_history(self, code, *, start_date=None, end_date=None,
+                      page: int = None, page_size: int = 20) -> (Union[list, None], bool):
         """
         获取指定基金的历史数据
-        {
-            FSRQ: 净值日期,
-            DWJZ: 单位净值,
-            LJJZ: 累计净值,
-            JZZZL: 日增长率,
-            SGZT: 申购状态,
-            SHZT: 赎回状态,
-        }
         :param code: 基金代码
         :param start_date:
         :param end_date:
@@ -223,6 +283,8 @@ class Fund:
         :param page_size:
         :return:
         """
+        page = page or 1
+
         url = 'http://api.fund.eastmoney.com/f10/lsjz'
         params = {
             'fundCode': code,
@@ -244,8 +306,8 @@ class Fund:
         result = json_data['Data']['LSJZList']
 
         if json_data['TotalCount'] > page * page_size:
-            next_result, next_ok = self.fetch_fund_history(code, start_date=start_date, end_date=end_date,
-                                                           page=page + 1, page_size=page_size)
+            next_result, next_ok = self.fetch_history(code, start_date=start_date, end_date=end_date,
+                                                      page=page + 1, page_size=page_size)
             if next_ok:
                 result.extend(next_result)
 
@@ -253,10 +315,19 @@ class Fund:
 
 
 if __name__ == '__main__':
-    pass
+    ...
     # stocks = Stock().fetch_stocks()
     # with open('stocks.json', 'w', encoding='utf-8') as f:
     #     json.dump(stocks, f, indent=4, ensure_ascii=False)
 
-    # Stock().fetch_stock_current_detail('161226')
-    # EastMoney('stock').fetch_current('161226')
+    # 当前数据
+    # res = Fund().fetch_current('161226')
+    # res = Stock().fetch_current('161226')
+    # res = EastMoney('stock').fetch_current('161226')
+    # print(res)
+
+    # 历史数据
+    # res = Fund().fetch_history('161226', start_date='2023-11-01', end_date='2023-11-15')
+    # res = Stock().fetch_history('161226', limit=2)
+    # res = EastMoney('fund').action('fetch_history', '161226', start_date='2023-11-01', end_date='2023-11-15')
+    # print(res)
