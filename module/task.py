@@ -6,7 +6,7 @@
 import asyncio
 import logging
 
-from module.process import WorthProcess, MonitorProcess
+from module.process import worth, monitor
 import sockets
 from utils import send_msg, utils
 import config
@@ -21,7 +21,7 @@ async def send_money(money_type, *, task_type, choke=False, is_broad=False):
     :param is_broad: 是否广播
     :return:
     """
-    process_task = {'worth': WorthProcess, 'monitor': MonitorProcess}
+    process_task = {'worth': worth.Worth, 'monitor': monitor.Monitor}
     assert task_type in process_task, 'error task_type'
 
     if is_broad and not sockets.clients:  # 无客户端连接时，跳过广播的定时任务

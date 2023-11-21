@@ -18,7 +18,7 @@ FeiShuRobotUrl = ''
 ChanKey = ''
 
 # 定时任务的时区
-CronZone = ''
+CronZone = 'Asia/Shanghai'
 
 # 基金净值任务
 FundWorthCron = [

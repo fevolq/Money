@@ -9,7 +9,7 @@ import sys
 
 import config
 from module import focus, bean
-from module.process import WorthProcess
+from module.process import worth
 from utils import utils
 
 
@@ -32,8 +32,8 @@ def command(cmd, *, money_type, codes: str = None):
 @bean.sys_exit
 def search(money_type, *, codes: str = None):
     """查询操作"""
-    worth = WorthProcess(money_type, codes=codes)
-    logging.info(f'【{worth.title}】{utils.now_time(tz=config.CronZone)}\n\n{worth.get_message()}')
+    processor = worth.Worth(money_type, codes=codes)
+    logging.info(f'【{processor.title}】{utils.now_time(tz=config.CronZone)}\n\n{processor.get_message()}')
 
 
 if __name__ == '__main__':

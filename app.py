@@ -12,12 +12,11 @@ from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 
-from module.process import WorthProcess
-from module import focus, process
+from module.process import worth, process
+from module import focus
 import scheduler
 from sockets import Client
 from utils import log_util
-
 
 log_util.init_logging('', datefmt='%Y-%m-%d %H:%M:%S', stream_level='INFO')
 app = FastAPI()
@@ -69,12 +68,11 @@ def search(
         codes: Union[str, None] = Query(default=None),
 ):
     """查询操作"""
-    worth = WorthProcess(money_type, codes=codes)
+    processor = worth.Worth(money_type, codes=codes)
     return {
         'code': 200,
-        'data': worth.get_data(),
-        'fields': worth.get_fields(),
-        # 'message': f'【{worth.title}】{utils.asia_local_time()}\n\n{worth.get_message()}',
+        'data': processor.get_data(),
+        'fields': processor.get_fields(),
     }
 
 

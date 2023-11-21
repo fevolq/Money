@@ -277,8 +277,8 @@ class Fund:
         """
         获取指定基金的历史数据
         :param code: 基金代码
-        :param start_date:
-        :param end_date:
+        :param start_date: %Y-%m-%d
+        :param end_date: %Y-%m-%d
         :param page:
         :param page_size:
         :return:
