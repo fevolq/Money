@@ -189,7 +189,9 @@ class Stock:
         url = f'https://push2his.eastmoney.com/api/qt/stock/kline/get'
         params = {
             'secid': self.get_quote_id(code),
-            'fields1': ','.join(['f1', 'f3']),  # f1: code代码, f2: market, f3: name名称, f4: decimal精度, f5: dktotal数据量
+
+            # f1: code代码, f2: market, f3: name名称, f4: decimal精度, f5: dktotal数据量
+            'fields1': ','.join(['f1', 'f3', 'f4']),
             'fields2': ','.join(fields),
             'lmt': limit,
 
@@ -203,7 +205,7 @@ class Stock:
             return None, False
         data = resp.json()['data']
 
-        if reload:
+        if reload and data:
             lines = []
             for line in data['klines']:
                 line = line.split(',')

@@ -76,6 +76,21 @@ def search(
     }
 
 
+# 历史查询
+@app.get("/search_history/{money_type}")
+def search_history(
+        money_type: MoneyType,
+        codes: Union[str, None] = Query(default=None),
+):
+    """查询操作"""
+    processor = worth.History(money_type, codes=codes)
+    return {
+        'code': 200,
+        'data': processor.get_data(),
+        'fields': processor.get_fields(),
+    }
+
+
 # 估值配置查询
 @app.get("/focus/worth/{money_type}")
 def focus_worth_get(money_type: MoneyType):
