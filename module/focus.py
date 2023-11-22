@@ -17,11 +17,12 @@ class Focus:
 
     def __init__(self, mode: str):
         self.mode = mode.lower()
-        assert self.mode in ('worth', 'monitor')
+        assert self.mode in ('worth', 'monitor', 'history_monitor')
 
         self.adapter = {
             'worth': Worth,
             'monitor': Monitor,
+            'history_monitor': HistoryMonitor,
         }[self.mode]()
 
     def __repr__(self):
@@ -260,6 +261,141 @@ class Monitor:
         save(data, Monitor.file_name)
 
         info = f'{",".join(hit_ids)}删除成功'
+        logging.info(info)
+        return True, info
+
+
+class HistoryMonitor:
+    file_name = 'history_monitor.json'
+
+    def __init__(self):
+        ...
+
+    def __repr__(self):
+        return '历史涨跌幅监控'
+
+    @classmethod
+    def get_default_option(cls) -> dict:
+        return {
+            "code": None,  # 代码
+            "3": {'growth': None, 'lessen': None},  # 3天的涨跌幅
+            "5": {'growth': None, 'lessen': None},
+            "7": {'growth': None, 'lessen': None},
+            "15": {'growth': None, 'lessen': None},
+            "30": {'growth': None, 'lessen': None},
+        }
+
+    def _update_option(self, option, *, record=None):
+        if not record:
+            record = self.get_default_option()
+
+        valid = False
+        for day in ["3", "5", "7", "15", "30"]:
+            if day not in option:
+                continue
+            day_option = option[day]
+            if not day_option:
+                continue
+
+            record[day]['growth'] = abs(float(day_option['growth'])) \
+                if 'growth' in day_option and day_option['growth'] is not None\
+                else day_option.get('growth', record[day]['growth'])
+            record[day]['lessen'] = abs(float(day_option['lessen'])) \
+                if 'lessen' in day_option and day_option['lessen'] is not None \
+                else day_option.get('lessen', record[day]['lessen'])
+            valid = valid or any([record[day]['growth'], record[day]['lessen']])
+
+        assert valid, '缺少有效值'
+
+        # 初始化的情况
+        if record['code'] is None:
+            record['code'] = option['code']
+
+        return record
+
+    @bean.check_money_type(1)
+    def add(self, money_type, *, option: {}, **kwargs) -> (bool, str):
+        data = load(HistoryMonitor.file_name)
+
+        record_options = copy.deepcopy(data.get(money_type, []))
+        record_codes = set([record['code'] for record in record_options])
+        assert option['code'] not in record_codes, f'已存在{option["code"]}配置，不可添加多条！'
+
+        record_options.append(self._update_option(option))
+
+        data[money_type] = record_options
+        save(data, HistoryMonitor.file_name)
+        return True, '添加成功'
+
+    @bean.check_money_type(1)
+    def get(self, money_type, *, code: str = None, **kwargs) -> (list, str):
+        data = load(HistoryMonitor.file_name)
+
+        options = copy.deepcopy(data.get(money_type, []))
+        if code:
+            options = list(filter(lambda item: item['code'] == code, options))
+
+        msg = '暂无配置'
+        if options:
+            msg = '\n'.join([
+                f'代码：{option["code"]}，'
+                f'3日：涨幅：{option["3"]["growth"]}，跌幅：{option["3"]["lessen"]}'
+                f'5日：涨幅：{option["5"]["growth"]}，跌幅：{option["5"]["lessen"]}'
+                f'7日：涨幅：{option["7"]["growth"]}，跌幅：{option["7"]["lessen"]}'
+                f'15日：涨幅：{option["15"]["growth"]}，跌幅：{option["15"]["lessen"]}'
+                f'30日：涨幅：{option["30"]["growth"]}，跌幅：{option["30"]["lessen"]}'
+                for option in options
+            ])
+
+        return options, msg
+
+    @bean.check_money_type(1)
+    def update(self, money_type, *, code, option: {}, **kwargs) -> (bool, str):
+        data = load(HistoryMonitor.file_name)
+
+        record_options = data.setdefault(money_type, [])
+        hit = False
+        for record in record_options:
+            if record['code'] != code:
+                continue
+            self._update_option(option, record=record)
+            hit = True
+            break
+
+        if not hit:
+            return False, 'code未匹配'
+
+        data[money_type] = record_options
+        save(data, HistoryMonitor.file_name)
+
+        info = f'{code} 更新成功'
+        logging.info(info)
+        return True, info
+
+    @bean.check_money_type(1)
+    def delete(self, money_type, *, codes: [str], **kwargs) -> (bool, str):
+        assert codes, '缺少有效ID'
+        data = load(HistoryMonitor.file_name)
+
+        record_options = data.get(money_type, [])
+        hit_index = []
+        hits = []
+        for index, option in enumerate(record_options):
+            if option['code'] in codes:
+                hit_index.append(index)
+                hits.append(option['code'])
+
+        if len(hits) == 0:
+            return False, 'id未匹配'
+
+        for index in hit_index[::-1]:
+            record_options.pop(index)
+
+        data[money_type] = record_options
+
+        save(data, HistoryMonitor.file_name)
+
+        info = f'{",".join(hits)}删除成功'
         logging.info(info)
         return True, info
 

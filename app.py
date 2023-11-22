@@ -147,10 +147,10 @@ def focus_worth_del(money_type: MoneyType, data: FocusWorthOptions):
 class MonitorOption(BaseModel):
     code: str
     remark: Union[str, None] = None
-    worth: Union[int, float, None] = None
-    cost: Union[int, float, None] = None
-    growth: Union[int, float, None] = None
-    lessen: Union[int, float, None] = None
+    worth: Union[int, float, None] = Query(default=None)
+    cost: Union[int, float, None] = Query(default=None, gt=0)
+    growth: Union[int, float, None] = Query(default=None, gt=0)
+    lessen: Union[int, float, None] = Query(default=None, gt=0)
 
 
 class MonitorUpdate(BaseModel):
@@ -221,6 +221,102 @@ def focus_monitor_del(
         data: MonitorDelete,
 ):
     res, msg = focus.Focus('monitor').delete(money_type, ids=[str(id_).strip() for id_ in data.ids.split(',')])
+    return {
+        'code': 200,
+        'data': res,
+        'msg': msg,
+    }
+
+
+class DayOption(BaseModel):
+    growth: Union[int, float, None] = Query(default=None, gt=0)
+    lessen: Union[int, float, None] = Query(default=None, gt=0)
+
+
+class HistoryMonitorOption(BaseModel):
+    code: str
+    day_3: Union[DayOption, None] = None
+    day_5: Union[DayOption, None] = None
+    day_7: Union[DayOption, None] = None
+    day_15: Union[DayOption, None] = None
+    day_30: Union[DayOption, None] = None
+
+
+class HistoryMonitorDelete(BaseModel):
+    codes: str
+
+
+# 历史监控配置查询
+@app.get("/focus/history_monitor/{money_type}")
+def focus_history_monitor_get(
+        money_type: MoneyType,
+        code: Union[str, None] = Query(default=None),
+):
+    data = focus.Focus('history_monitor').get(money_type, code=code)[0]
+
+    codes = [row['code'] for row in data]
+    names = process.get_codes_name(money_type, codes)
+
+    for row in data:
+        row['name'] = names[row['code']]
+
+    return {
+        'code': 200,
+        'data': data
+    }
+
+
+# 历史监控配置添加
+@app.post("/focus/history_monitor/{money_type}")
+def focus_history_monitor_add(
+        money_type: MoneyType,
+        option: HistoryMonitorOption,
+):
+    assert any([option.day_3, option.day_5, option.day_7, option.day_15, option.day_30]), '缺少有效配置'
+    option = option.model_dump()
+    for k, v in option.items():
+        if k.startswith('day_'):
+            option[k.lstrip('day_')] = option[k]
+            option.pop(k)
+
+    data, msg = focus.Focus('history_monitor').add(money_type, option=option)
+    return {
+        'code': 200,
+        'data': data,
+        'msg': msg,
+    }
+
+
+# 历史监控配置更新
+@app.put("/focus/history_monitor/{money_type}")
+def focus_history_monitor_update(
+        money_type: MoneyType,
+        option: HistoryMonitorOption,
+):
+    code = option.code
+    assert any([option.day_3, option.day_5, option.day_7, option.day_15, option.day_30]), '缺少有效配置'
+    option = option.model_dump()
+    for k, v in option.items():
+        if k.startswith('day_'):
+            option[k.lstrip('day_')] = option[k]
+            option.pop(k)
+
+    data, msg = focus.Focus('history_monitor').update(money_type, code=code, option=option)
+    return {
+        'code': 200,
+        'data': data,
+        'msg': msg,
+    }
+
+
+# 历史监控配置删除
+@app.delete("/focus/history_monitor/{money_type}")
+def focus_history_monitor_del(
+        money_type: MoneyType,
+        option: HistoryMonitorDelete,
+):
+    res, msg = focus.Focus('history_monitor').delete(money_type,
+                                                     codes=[str(code).strip() for code in option.codes.split(',')])
     return {
         'code': 200,
         'data': res,
