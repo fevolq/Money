@@ -386,7 +386,7 @@ class HistoryMonitor:
                 hits.append(option['code'])
 
         if len(hits) == 0:
-            return False, 'id未匹配'
+            return False, 'code未匹配'
 
         for index in hit_index[::-1]:
             record_options.pop(index)

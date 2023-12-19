@@ -16,7 +16,7 @@ import config
 
 
 class Worth:
-    """净值"""
+    """估值"""
 
     expire = 60  # 缓存时间
 
@@ -32,10 +32,11 @@ class Worth:
         self.money_type = money_type
         self.codes = codes if isinstance(codes, (tuple, list, set, type(None))) \
             else [str(code) for code in str(codes).split(',') if code]
-        self.title = {
+        self.type_ = {
             'stock': '股票',
             'fund': '基金',
         }[self.money_type]
+        self.title = f'{self.type_} 估值'
         self.foc = focus.Focus('worth')
 
         self.adapter = {
@@ -299,6 +300,8 @@ class FundWorth:
 
 class History:
 
+    MaxLimit = 30
+
     @bean.check_money_type(1)
     def __init__(self, money_type, *, codes: Union[str, int, tuple, list, set] = None):
         """
@@ -311,10 +314,11 @@ class History:
         self.money_type = money_type
         self.codes = codes if isinstance(codes, (tuple, list, set, type(None))) \
             else [str(code) for code in str(codes).split(',') if code]
-        self.title = {
+        self.type_ = {
             'stock': '股票',
             'fund': '基金',
         }[self.money_type]
+        self.title = f'{self.type_} 历史数据'
         self.foc = focus.Focus('worth')
 
         self.adapter = {
@@ -343,12 +347,12 @@ class History:
         codes = self._get_codes()
 
         def one(code):
-            key = f'history.{self.money_type}.{code}'
+            key = f'history.{self.money_type}.{code}.{History.MaxLimit}'
             if cache.exist(key):
                 return cache.get(key)
 
             logging.info(f'开始查询历史：{self.money_type} [{code}]')
-            res, ok = self.adapter.load(self.api, code, 30)
+            res, ok = self.adapter.load(self.api, code, History.MaxLimit)
             if ok:
                 bean.set_cache_expire_today(key, res)
             if ok and res:

@@ -18,15 +18,23 @@ scheduler = AsyncIOScheduler()
 
 def add_job():
     jobs = [
+        # 当前估值
         {'cron': config.FundWorthCron, 'title': 'Fund Worth',
          'args': ('fund',), 'kwargs': {'task_type': 'worth'}, },
         {'cron': config.StockWorthCron, 'title': 'Stock Worth',
          'args': ('stock',), 'kwargs': {'task_type': 'worth'}, },
 
+        # 阈值监控
         {'cron': config.FundMonitorCron, 'title': 'Fund Monitor',
          'args': ('fund',), 'kwargs': {'task_type': 'monitor'}, },
         {'cron': config.StockMonitorCron, 'title': 'Stock Monitor',
          'args': ('stock',), 'kwargs': {'task_type': 'monitor'}, },
+
+        # 历史涨跌幅监控
+        {'cron': config.FundHisMonitorCron, 'title': 'Fund History Monitor',
+         'args': ('fund',), 'kwargs': {'task_type': 'history_monitor'}, },
+        {'cron': config.StockHisMonitorCron, 'title': 'Stock History Monitor',
+         'args': ('stock',), 'kwargs': {'task_type': 'history_monitor'}, },
     ]
     for job in jobs:
         for index, cron in enumerate(job['cron']):
@@ -47,6 +55,11 @@ def add_broadcast_job():
          'args': ('fund',), 'kwargs': {'task_type': 'monitor'}, },
         {'cron': config.BroadMonitorCron, 'title': 'Broad Stock Monitor',
          'args': ('stock',), 'kwargs': {'task_type': 'monitor'}, },
+
+        {'cron': config.HisBroadMonitorCron, 'title': 'Broad Fund History Monitor',
+         'args': ('fund',), 'kwargs': {'task_type': 'history_monitor'}, },
+        {'cron': config.HisBroadMonitorCron, 'title': 'Broad Stock History Monitor',
+         'args': ('stock',), 'kwargs': {'task_type': 'history_monitor'}, },
     ]
     for job in jobs:
         for index, cron in enumerate(job['cron']):

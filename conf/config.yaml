@@ -8,22 +8,34 @@ FeiShuRobotUrl: ''
 ChanKey: ''
 
 # 定时
-## 基金净值
+## 基金估值
 FundWorthCron:
   - ''
 
-## 股票净值
+## 股票估值
 StockWorthCron:
   - ''
 
-## 基金监控
+## 基金阈值监控
 FundMonitorCron:
   - ''
 
-## 股票监控
+## 股票阈值监控
 StockMonitorCron:
   - ''
 
-## 监控任务广播
+## 基金历史监控
+FundHisMonitorCron:
+  - ''
+
+## 股票历史监控
+StockHisMonitorCron:
+  - ''
+
+## 阈值监控任务广播
 BroadMonitorCron:
+  - ''
+
+## 历史监控任务广播
+HisBroadMonitorCron:
   - ''

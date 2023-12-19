@@ -29,7 +29,7 @@ def get_codes_name(money_type, codes: Union[str, list]) -> dict:
     获取codes的名称
     :param money_type:
     :param codes:
-    :return: {code: name}
+    :return: {code: name or None}
     """
     codes = codes if isinstance(codes, list) else [codes]
 
