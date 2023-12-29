@@ -51,16 +51,6 @@ class MoneyType(str, Enum):
     stock = 'stock'
 
 
-# 估值关注的单个配置
-class FocusWorthOption(BaseModel):
-    code: str
-    cost: Union[int, float, None] = Query(default=None, gt=0)
-
-
-class FocusWorthOptions(BaseModel):
-    options: List[FocusWorthOption]
-
-
 # 估值查询
 @app.get("/search/{money_type}")
 def search(
@@ -91,6 +81,16 @@ def search_history(
     }
 
 
+# 估值关注的单个配置
+class FocusWorthOption(BaseModel):
+    code: str
+    cost: Union[int, float, None] = Query(default=None, gt=0)
+
+
+class FocusWorthReq(BaseModel):
+    options: List[FocusWorthOption]
+
+
 # 估值配置查询
 @app.get("/focus/worth/{money_type}")
 def focus_worth_get(money_type: MoneyType):
@@ -110,8 +110,8 @@ def focus_worth_get(money_type: MoneyType):
 
 # 估值配置添加
 @app.post("/focus/worth/{money_type}")
-def focus_worth_add(money_type: MoneyType, data: FocusWorthOptions):
-    res = focus.Focus('worth').add(money_type, options=[option.model_dump() for option in data.options])
+def focus_worth_add(money_type: MoneyType, req: FocusWorthReq):
+    res = focus.Focus('worth').add(money_type, options=[option.model_dump() for option in req.options])
 
     return {
         'code': 200,
@@ -122,8 +122,8 @@ def focus_worth_add(money_type: MoneyType, data: FocusWorthOptions):
 
 # 估值配置更新
 @app.put("/focus/worth/{money_type}")
-def focus_worth_update(money_type: MoneyType, data: FocusWorthOption):
-    res = focus.Focus('worth').update(money_type, option=data.model_dump())
+def focus_worth_update(money_type: MoneyType, req: FocusWorthOption):
+    res = focus.Focus('worth').update(money_type, option=req.model_dump())
 
     return {
         'code': 200,
@@ -134,8 +134,8 @@ def focus_worth_update(money_type: MoneyType, data: FocusWorthOption):
 
 # 估值配置删除
 @app.delete("/focus/worth/{money_type}")
-def focus_worth_del(money_type: MoneyType, data: FocusWorthOptions):
-    res = focus.Focus('worth').delete(money_type, options=[option.model_dump() for option in data.options])
+def focus_worth_del(money_type: MoneyType, req: FocusWorthReq):
+    res = focus.Focus('worth').delete(money_type, options=[option.model_dump() for option in req.options])
 
     return {
         'code': 200,
@@ -186,10 +186,10 @@ def focus_monitor_get(
 @app.post("/focus/monitor/{money_type}")
 def focus_monitor_add(
         money_type: MoneyType,
-        option: MonitorOption,
+        req: MonitorOption,
 ):
-    assert option.worth or (option.cost and (option.growth or option.lessen)), '缺少参数'
-    data, msg = focus.Focus('monitor').add(money_type, option=option.model_dump())
+    assert req.worth or (req.cost and (req.growth or req.lessen)), '缺少参数'
+    data, msg = focus.Focus('monitor').add(money_type, option=req.model_dump())
     return {
         'code': 200,
         'data': data,
@@ -201,10 +201,10 @@ def focus_monitor_add(
 @app.put("/focus/monitor/{money_type}")
 def focus_monitor_update(
         money_type: MoneyType,
-        data: MonitorUpdate,
+        req: MonitorUpdate,
 ):
-    option = data.option
-    hash_id = data.id
+    option = req.option
+    hash_id = req.id
     assert option.worth or (option.cost and (option.growth or option.lessen)), '缺少参数'
     data, msg = focus.Focus('monitor').update(money_type, hash_id=hash_id, option=option.model_dump())
     return {
@@ -218,9 +218,9 @@ def focus_monitor_update(
 @app.delete("/focus/monitor/{money_type}")
 def focus_monitor_del(
         money_type: MoneyType,
-        data: MonitorDelete,
+        ids: MonitorDelete,
 ):
-    res, msg = focus.Focus('monitor').delete(money_type, ids=[str(id_).strip() for id_ in data.ids.split(',')])
+    res, msg = focus.Focus('monitor').delete(money_type, ids=[str(id_).strip() for id_ in ids.ids.split(',')])
     return {
         'code': 200,
         'data': res,
@@ -234,12 +234,16 @@ class DayOption(BaseModel):
 
 
 class HistoryMonitorOption(BaseModel):
-    code: str
     day_3: Union[DayOption, None] = None
     day_5: Union[DayOption, None] = None
     day_7: Union[DayOption, None] = None
     day_15: Union[DayOption, None] = None
     day_30: Union[DayOption, None] = None
+
+
+class HistoryMonitorReq(BaseModel):
+    code: str
+    option: HistoryMonitorOption
 
 
 class HistoryMonitorDelete(BaseModel):
@@ -270,8 +274,10 @@ def focus_history_monitor_get(
 @app.post("/focus/history_monitor/{money_type}")
 def focus_history_monitor_add(
         money_type: MoneyType,
-        option: HistoryMonitorOption,
+        req: HistoryMonitorReq,
 ):
+    code = req.code
+    option = req.option
     assert any([option.day_3, option.day_5, option.day_7, option.day_15, option.day_30]), '缺少有效配置'
     option = option.model_dump()
     for k, v in option.items():
@@ -279,7 +285,7 @@ def focus_history_monitor_add(
             option[k.lstrip('day_')] = option[k]
             option.pop(k)
 
-    data, msg = focus.Focus('history_monitor').add(money_type, option=option)
+    data, msg = focus.Focus('history_monitor').add(money_type, code=code, option=option)
     return {
         'code': 200,
         'data': data,
@@ -291,9 +297,10 @@ def focus_history_monitor_add(
 @app.put("/focus/history_monitor/{money_type}")
 def focus_history_monitor_update(
         money_type: MoneyType,
-        option: HistoryMonitorOption,
+        req: HistoryMonitorReq,
 ):
-    code = option.code
+    code = req.code
+    option = req.option
     assert any([option.day_3, option.day_5, option.day_7, option.day_15, option.day_30]), '缺少有效配置'
     option = option.model_dump()
     for k, v in option.items():
@@ -313,10 +320,9 @@ def focus_history_monitor_update(
 @app.delete("/focus/history_monitor/{money_type}")
 def focus_history_monitor_del(
         money_type: MoneyType,
-        option: HistoryMonitorDelete,
+        codes: HistoryMonitorDelete,
 ):
-    res, msg = focus.Focus('history_monitor').delete(money_type,
-                                                     codes=[str(code).strip() for code in option.codes.split(',')])
+    res, msg = focus.Focus('history_monitor').delete(money_type, codes=[str(code).strip() for code in codes.codes.split(',')])
     return {
         'code': 200,
         'data': res,

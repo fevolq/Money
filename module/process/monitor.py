@@ -345,14 +345,14 @@ class HistoryMonitor:
         self.datas = self._load()
         # 对原始数据进行处理
         self.objs = [
-            self.adapter(cur_data, his_data, list(filter(lambda option: option['code'] == code, self.options))[0])
-            for code, cur_data, his_data in self.datas
+            self.adapter(option, cur_data, his_data)
+            for option, cur_data, his_data in self.datas
         ]
 
     def _load(self) -> list:
         """
         加载数据
-        :return: [(code, 当前数据、历史数据)]
+        :return: [(option配置, 当前数据、历史数据)]
         """
         assert self.options, '无监控项，请添加配置后再来。'
         codes = list(set([option['code'] for option in self.options]))
@@ -386,7 +386,7 @@ class HistoryMonitor:
         args_list = [[(_code,)] for _code in codes]
         datas = pools.execute_thread(one, args_list)
 
-        return [(codes[index], *datas[index]) for index in range(len(codes)) if datas[index]]
+        return [(self.options[index], *datas[index]) for index in range(len(codes)) if datas[index]]
 
     def get_message(self, is_open=False, **kwargs) -> List:
         all_msg = []
@@ -403,12 +403,11 @@ class StockHistoryMonitor:
         **StockHistory.relate_fields,
     }
 
-    def __init__(self, cur_data, his_data: dict, option: dict):
+    def __init__(self, option: dict, cur_data, his_data: dict):
         self._opening = True
         self.code = option['code']
-        # self.name = process.process.get_codes_name('stock', self.code)[self.code]
         self.name = cur_data[StockMonitor.get_relate('name')]
-        self.option = option
+        self.option = option['option']
         self._data = self._resolve_data(cur_data, his_data)
 
     def __repr__(self):
@@ -511,8 +510,6 @@ def solve_history_monitor_data(his_df: pd.DataFrame, options: dict) -> List[dict
 
     # 模式二：3: 1~3; 5: 1~5; 7: 1~7; 15: 1~15; 30: 1~30
     for day, option in options.items():
-        if day == 'code':
-            continue
         if not any(option.values()):
             continue
         target = int(day)
@@ -537,11 +534,11 @@ class FundHistoryMonitor:
         **FundHistory.relate_fields,
     }
 
-    def __init__(self, cur_data: dict, his_data: dict, option: dict):
+    def __init__(self, option: dict, cur_data: dict, his_data: dict):
         self._opening = True
         self.code = option['code']
         self.name = cur_data[FundMonitor.get_relate('name')]
-        self.option = option
+        self.option = option['option']
         self._data = self._resolve_data(cur_data, his_data)
 
     @property
