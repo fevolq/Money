@@ -415,7 +415,7 @@ class StockHistory:
         self.name = data['name']
         decimal = f'%.{data["decimal"]}f'
 
-        df = pd.DataFrame(data['klines'])
+        df = pd.DataFrame(data['klines'][::-1])
         rename_fields = {option['field']: field for field, option in StockHistory.relate_fields.items()
                          if option['field']}
         df.rename(rename_fields, axis=1, inplace=True)
@@ -444,7 +444,7 @@ class FundHistory:
 
     def __init__(self, code, data: dict):
         self.code = code
-        self.name = process.process.get_codes_name('fund', code).get(code, None)  # 优化：存在相互导入的问题
+        self.name = process.process.get_codes_name('fund', code).get(code, None)
         self._data = self._resolve_data(data)
 
     @classmethod
