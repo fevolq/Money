@@ -300,10 +300,10 @@ class FundWorth:
 
 class History:
 
-    MaxLimit = 30
+    DefaultMonth = 1
 
     @bean.check_money_type(1)
-    def __init__(self, money_type, *, codes: Union[str, int, tuple, list, set] = None):
+    def __init__(self, money_type, *, codes: Union[str, int, tuple, list, set] = None, month: Union[str, int] = None):
         """
 
         :param money_type: 类型
@@ -314,6 +314,7 @@ class History:
         self.money_type = money_type
         self.codes = codes if isinstance(codes, (tuple, list, set, type(None))) \
             else [str(code) for code in str(codes).split(',') if code]
+        self.month = int(month or History.DefaultMonth)
         self.type_ = {
             'stock': '股票',
             'fund': '基金',
@@ -345,14 +346,15 @@ class History:
     def _load(self) -> List:
         """加载数据"""
         codes = self._get_codes()
+        limit = utils.get_delay(utils.now_time(fmt='%Y-%m-%d'), utils.get_delay_month(-self.month))
 
         def one(code):
-            key = f'history.{self.money_type}.{code}.{History.MaxLimit}'
+            key = f'history.{self.money_type}.{code}.{limit}'
             if cache.exist(key):
                 return cache.get(key)
 
             logging.info(f'开始查询历史：{self.money_type} [{code}]')
-            res, ok = self.adapter.load(self.api, code, History.MaxLimit)
+            res, ok = self.adapter.load(self.api, code, limit)
             if ok:
                 bean.set_cache_expire_today(key, res)
             if ok and res:

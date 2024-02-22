@@ -71,9 +71,10 @@ def search(
 def search_history(
         money_type: MoneyType,
         codes: Union[str, None] = Query(default=None),
+        month: Union[int, None] = Query(default=None),
 ):
     """查询操作"""
-    processor = worth.History(money_type, codes=codes)
+    processor = worth.History(money_type, codes=codes, month=month)
     return {
         'code': 200,
         'data': processor.get_data(),

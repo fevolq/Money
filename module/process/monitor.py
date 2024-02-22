@@ -560,7 +560,7 @@ class FundHistoryMonitor:
             :param times: 重试次数
             :return:
             """
-            # 未避免极端情况导致的死递归，故限制最大递归次数
+            # 为避免极端情况导致的死递归，故限制最大递归次数
             if success and len(res) < limit and times < max_times:
                 next_start_date = utils.get_delay_date(last_date, delay=len(res) - limit)
                 next_res, next_ok = api.fetch_history(code,
